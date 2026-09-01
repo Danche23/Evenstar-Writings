@@ -1,0 +1,19 @@
+# 编译产物
+bin/
+*.exe
+
+# 真实配置（含敏感信息，禁止提交；仓库只保留 *.example 模板）
+configs/config.yaml
+.env
+
+# 日志
+logs/
+*.log
+
+# 测试覆盖率
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/

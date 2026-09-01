@@ -1,0 +1,30 @@
+# ===== 工作目录（含本地记忆/笔记，可能含敏感信息，禁止提交）=====
+.workbuddy/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+
+# ===== 日志 =====
+*.log
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+
+# ===== 后端真实配置（含密钥/密码，禁止提交；仓库只保留 *.example 模板）=====
+backend/configs/config.yaml
+backend/.env
+
+# ===== 后端编译产物 =====
+backend/bin/
+backend/*.exe
+backend/coverage.out
+backend/coverage.html
+
+# ===== 前端 =====
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local

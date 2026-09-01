@@ -1,0 +1,1715 @@
+openapi: 3.0.3
+info:
+  title: Evenstar Writings API
+  version: 1.0.0
+  description: |
+    Evenstar Writings 个人博客后端 API。
+
+    统一约定：
+    - 前缀：`/api`（前台/用户）、`/api/admin`（管理员，AdminOnly）
+    - 鉴权：`Authorization: Bearer <JWT>`；JWT 有效期 7 天，无 refresh token
+    - 统一响应：`{ code, message, data }`，成功 `code = 0`
+    - 错误：HTTP 状态码表达错误类别（REST 语义码），body 的 `code` 表达具体业务原因
+    - 分页请求：`page`（从 1 开始）、`page_size`（最大 100）
+    - 分页响应：`{ list, total, page, page_size, total_page }`
+    - 滑块验证（阿里云验证码 2.0）：`send-code` / `register` / `reset-password` 每次必验；`login` 连续失败 3 次后必验。前端取得 `captcha_verify_param` 随请求提交，后端服务端校验，不信任前端结果。
+
+    > 本文件为「初稿」，导入 Apifox 后可自行调整，确认后作为前后端开发契约。
+servers:
+  - url: http://localhost:8080
+    description: 本地开发环境
+
+tags:
+  - name: Auth
+    description: 认证：验证码 / 注册 / 登录 / 重置密码
+  - name: User
+    description: 用户：个人资料 / 密码 / 后台用户管理
+  - name: Article
+    description: 文章：前台浏览 / 后台管理
+  - name: Category
+    description: 分类
+  - name: Tag
+    description: 标签
+  - name: Comment
+    description: 评论：两级 / 置顶
+  - name: Upload
+    description: 上传 / OSS 文件管理
+  - name: Stats
+    description: 后台统计
+
+paths:
+  # ==================== 认证 ====================
+  /api/auth/send-code:
+    post:
+      tags: [Auth]
+      summary: 发送邮箱验证码
+      description: |
+        发送注册或重置密码验证码。每次必验滑块（`captcha_verify_param`）。
+        - 校验顺序：滑块校验 → Redis 限流（同邮箱 60 秒一次 / 每日 10 次）→ 生成并发送
+        - `type=register`：校验邮箱未注册；`type=reset`：校验邮箱已注册
+      operationId: sendCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, type, captcha_verify_param]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                type:
+                  type: string
+                  enum: [register, reset]
+                  example: register
+                captcha_verify_param:
+                  type: string
+                  description: 阿里云验证码 2.0 前端获取的验证参数，后端服务端校验
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: 注册
+      description: |
+        注册成功后直接返回 token（自动登录）。密码 8 位以上，需含字母和数字。
+        每次必验滑块。`role` 恒为 2（普通用户）；`nickname` 为空时后端生成默认昵称。
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, email, code, captcha_verify_param]
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: danche
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 100
+                  description: 8 位以上，含字母和数字
+                  example: abc12345
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                code:
+                  type: string
+                  description: 邮箱验证码（5 分钟有效，错 5 次作废）
+                  example: "123456"
+                nickname:
+                  type: string
+                  maxLength: 50
+                  description: 选填，为空时后端生成默认昵称
+                captcha_verify_param:
+                  type: string
+                  description: 阿里云验证码 2.0 验证参数
+      responses:
+        "200":
+          description: 注册成功，返回 token 和用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: 重置密码（忘记密码）
+      description: |
+        通过邮箱验证码重置密码。每次必验滑块。成功后 `token_version + 1`，旧 token 全部失效。
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code, new_password, captcha_verify_param]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                code:
+                  type: string
+                  description: 邮箱验证码
+                  example: "123456"
+                new_password:
+                  type: string
+                  minLength: 8
+                  maxLength: 100
+                  description: 8 位以上，含字母和数字
+                  example: newpass123
+                captcha_verify_param:
+                  type: string
+                  description: 阿里云验证码 2.0 验证参数
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: 登录
+      description: |
+        邮箱 + 密码登录，管理员与普通用户同口，靠 `role` 区分。
+        - 登录限流：同邮箱 1 分钟 5 次 + 同 IP 10 分钟 20 次
+        - 滑块验证：连续失败 3 次后要求验证；正常登录不要求
+        - 校验 `status=1` + 未删除
+        - 业务码：连续失败 3 次返回 `1007 captcha_required`（`data.need_captcha=true`，前端据此弹滑块）；滑块凭证校验失败返回 `1008 captcha_verify_failed`
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@evenstar.local
+                password:
+                  type: string
+                  example: "123456"
+                captcha_verify_param:
+                  type: string
+                  description: 连续失败 3 次后必填；正常登录可省略
+      responses:
+        "200":
+          description: 登录成功，返回 token 和用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/user/profile:
+    get:
+      tags: [User]
+      summary: 获取当前登录用户信息
+      description: 前端恢复登录态用，JWT 中取 user_id 查询。
+      operationId: getProfile
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: 当前用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [User]
+      summary: 修改个人资料
+      description: 修改昵称 / 头像。`username` 不可修改。
+      operationId: updateProfile
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  maxLength: 50
+                  nullable: true
+                avatar:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/user/password:
+    put:
+      tags: [User]
+      summary: 修改密码
+      description: 修改成功后 `token_version + 1`，旧 token 全部失效，前端清 token 重新登录。
+      operationId: updatePassword
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_password, new_password]
+              properties:
+                old_password:
+                  type: string
+                  example: "123456"
+                new_password:
+                  type: string
+                  minLength: 8
+                  maxLength: 100
+                  description: 8 位以上，含字母和数字
+                  example: newpass123
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 后台用户管理 ====================
+  /api/admin/users:
+    get:
+      tags: [User]
+      summary: 用户列表（分页）
+      description: AdminOnly。分页返回用户列表。
+      operationId: adminListUsers
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: keyword
+          in: query
+          schema: { type: string }
+          description: 按用户名 / 昵称 / 邮箱模糊搜索（可选）
+      responses:
+        "200":
+          description: 分页用户列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    properties:
+                      list:
+                        type: array
+                        items: { $ref: "#/components/schemas/User" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/users/{id}:
+    delete:
+      tags: [User]
+      summary: 删除用户（软删）
+      description: |
+        AdminOnly。软删用户，`token_version + 1` 强制目标下线。
+        管理员不能删除自己（返回业务错误）。软删后 email/username 继续占用。
+      operationId: adminDeleteUser
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/users/{id}/status:
+    put:
+      tags: [User]
+      summary: 禁用 / 解禁用户
+      description: |
+        AdminOnly。`status=1` 正常，`status=2` 禁用。禁用时 `token_version + 1` 强制下线。
+        管理员不能禁用自己。
+      operationId: adminUpdateUserStatus
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: integer
+                  enum: [1, 2]
+                  description: 1=正常 2=禁用
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 文章（前台） ====================
+  /api/articles:
+    get:
+      tags: [Article]
+      summary: 文章列表（前台）
+      description: |
+        仅返回已发布文章（status=2），按 `published_at` 倒序。列表不含 `content`。
+        支持分类 / 标签 / 关键词筛选；关键词匹配标题 + 摘要 LIKE。
+      operationId: listArticles
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: category_id
+          in: query
+          schema: { type: integer }
+          description: 按分类筛选（可选）
+        - name: tag_id
+          in: query
+          schema: { type: integer }
+          description: 按标签筛选（可选）
+        - name: keyword
+          in: query
+          schema: { type: string }
+          description: 标题 / 摘要关键词搜索（可选）
+      responses:
+        "200":
+          description: 分页文章列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    properties:
+                      list:
+                        type: array
+                        items: { $ref: "#/components/schemas/ArticleListItem" }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/articles/hot:
+    get:
+      tags: [Article]
+      summary: 热门文章
+      description: Redis ZSET `hot:articles` 取 TOP N，过滤已删除/未发布文章。
+      operationId: hotArticles
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+          description: 返回条数（可选，默认 10）
+      responses:
+        "200":
+          description: 热门文章列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ArticleListItem" }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/articles/{id}:
+    get:
+      tags: [Article]
+      summary: 文章详情（前台）
+      description: |
+        返回文章全文（含 content、作者、分类、标签）。
+        浏览量 = MySQL views + Redis 未回写增量；同 IP 30 分钟计一次。
+      operationId: getArticle
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: 文章详情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDetailData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 文章（后台） ====================
+  /api/admin/articles:
+    get:
+      tags: [Article]
+      summary: 文章列表（后台，含草稿）
+      description: AdminOnly。含草稿，可按 status 筛选。
+      operationId: adminListArticles
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2]
+          description: 1=草稿 2=发布（可选，不传返回全部）
+        - name: keyword
+          in: query
+          schema: { type: string }
+          description: 标题搜索（可选）
+      responses:
+        "200":
+          description: 分页文章列表（含草稿）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    properties:
+                      list:
+                        type: array
+                        items: { $ref: "#/components/schemas/AdminArticleListItem" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Article]
+      summary: 新建文章
+      description: |
+        AdminOnly。创建文章，`status` 可选 1=草稿 / 2=发布。
+        首次 `status=2` 时写入 `published_at`。分类/标签关联通过 `category_ids` / `tag_ids` 全量写入。
+      operationId: adminCreateArticle
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleWriteRequest"
+      responses:
+        "200":
+          description: 创建成功，返回文章 id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/articles/{id}:
+    get:
+      tags: [Article]
+      summary: 文章详情（后台，编辑页加载）
+      description: AdminOnly。含草稿全字段，含 `category_ids` / `tag_ids` 供编辑页预选。
+      operationId: adminGetArticle
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: 文章完整信息（含草稿）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminArticleDetailData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [Article]
+      summary: 编辑文章
+      description: |
+        AdminOnly。全量更新。草稿/发布切换通过 `status` 字段；首次变 2 时写 `published_at`。
+        分类/标签关联全量替换（先删后插）。
+      operationId: adminUpdateArticle
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleWriteRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Article]
+      summary: 删除文章（软删）
+      description: AdminOnly。软删文章。
+      operationId: adminDeleteArticle
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 分类 ====================
+  /api/categories:
+    get:
+      tags: [Category]
+      summary: 分类列表（前台）
+      description: 全量不分页，带 `article_count`（仅统计已发布且未删除文章）。
+      operationId: listCategories
+      responses:
+        "200":
+          description: 分类列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/categories:
+    post:
+      tags: [Category]
+      summary: 新建分类
+      description: AdminOnly。重名返回业务错误。
+      operationId: adminCreateCategory
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryWriteRequest"
+      responses:
+        "200":
+          description: 创建成功，返回分类 id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/categories/{id}:
+    put:
+      tags: [Category]
+      summary: 编辑分类
+      description: AdminOnly。重名返回业务错误。
+      operationId: adminUpdateCategory
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryWriteRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Category]
+      summary: 删除分类
+      description: AdminOnly。硬删除，中间表 CASCADE 清空。
+      operationId: adminDeleteCategory
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 标签 ====================
+  /api/tags:
+    get:
+      tags: [Tag]
+      summary: 标签列表（前台）
+      description: 全量不分页，带 `article_count`（仅统计已发布且未删除文章）。
+      operationId: listTags
+      responses:
+        "200":
+          description: 标签列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Tag" }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/tags:
+    post:
+      tags: [Tag]
+      summary: 新建标签
+      description: AdminOnly。重名返回业务错误。
+      operationId: adminCreateTag
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagWriteRequest"
+      responses:
+        "200":
+          description: 创建成功，返回标签 id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/tags/{id}:
+    put:
+      tags: [Tag]
+      summary: 编辑标签
+      description: AdminOnly。重名返回业务错误。
+      operationId: adminUpdateTag
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagWriteRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Tag]
+      summary: 删除标签
+      description: AdminOnly。硬删除，中间表 CASCADE 清空。
+      operationId: adminDeleteTag
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 评论 ====================
+  /api/articles/{id}/comments:
+    get:
+      tags: [Comment]
+      summary: 文章评论列表（两级树）
+      description: |
+        返回两级评论树：一级评论分页，二级评论全量挂在对应一级评论下。
+        排序：置顶评论在最前（多条按 top_time 倒序），普通评论按时间正序。
+        软删的父评论显示「该评论已删除」，注销用户显示「已注销用户」。
+      operationId: listComments
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: 两级评论树（一级分页）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    properties:
+                      list:
+                        type: array
+                        items: { $ref: "#/components/schemas/Comment" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Comment]
+      summary: 发表评论
+      description: |
+        需登录。内容 ≤ 1000 字。限流同用户 1 分钟 5 条。
+        层级规则（最多两级）：
+        - 一级评论：不传 parent_id
+        - 回复一级评论：parent_id = 一级评论 id
+        - 回复二级评论：parent_id 仍 = 所属一级评论 id，reply_to_id = 实际回复对象 id
+        后端强制层级归位。
+      operationId: createComment
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  maxLength: 1000
+                parent_id:
+                  type: integer
+                  nullable: true
+                  description: 一级评论 id（回复时恒指一级）
+                reply_to_id:
+                  type: integer
+                  nullable: true
+                  description: 实际回复对象 id，仅用于「张三 → 李四」展示
+      responses:
+        "200":
+          description: 评论成功，返回新评论
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/comments/{id}:
+    delete:
+      tags: [Comment]
+      summary: 删除评论（软删）
+      description: 需登录。用户可删除自己的评论，管理员可删除任何评论。
+      operationId: deleteComment
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 后台评论 ====================
+  /api/admin/comments:
+    get:
+      tags: [Comment]
+      summary: 评论列表（后台，分页）
+      description: AdminOnly。分页返回评论，可按 article_id 筛选。
+      operationId: adminListComments
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: article_id
+          in: query
+          schema: { type: integer }
+          description: 按文章筛选（可选）
+      responses:
+        "200":
+          description: 分页评论列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    properties:
+                      list:
+                        type: array
+                        items: { $ref: "#/components/schemas/AdminComment" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/comments/{id}:
+    delete:
+      tags: [Comment]
+      summary: 删除评论（后台，软删）
+      description: AdminOnly。管理员可删除任何评论。
+      operationId: adminDeleteComment
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/comments/{id}/top:
+    put:
+      tags: [Comment]
+      summary: 置顶 / 取消置顶评论
+      description: |
+        AdminOnly。切换置顶状态：未置顶 → 置顶（is_top=1, top_time=now）；已置顶 → 取消（is_top=0, top_time=null）。
+        仅一级评论可置顶，二级评论返回业务错误。一篇文章允许多条置顶。
+      operationId: adminToggleCommentTop
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 上传 ====================
+  /api/upload:
+    post:
+      tags: [Upload]
+      summary: 上传图片
+      description: |
+        需登录。统一上传接口，通过 `scene` 区分：
+        - `article`：仅管理员，单文件 5MB，不限次数
+        - `avatar`：所有登录用户，单文件 5MB，每用户每月 5 次
+        类型：jpg / png / gif / webp。上传成功后记 uploads 表，返回 url。
+      operationId: uploadFile
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, scene]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 图片文件（jpg/png/gif/webp，≤5MB）
+                scene:
+                  type: string
+                  enum: [article, avatar]
+                  description: article=文章图（管理员）；avatar=头像（所有登录用户）
+      responses:
+        "200":
+          description: 上传成功，返回文件 url
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/uploads:
+    get:
+      tags: [Upload]
+      summary: 上传文件列表（后台，分页）
+      description: AdminOnly。分页返回，支持按 scene 筛选。
+      operationId: adminListUploads
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: scene
+          in: query
+          schema:
+            type: string
+            enum: [article, avatar]
+          description: 按 scene 筛选（可选）
+      responses:
+        "200":
+          description: 分页上传文件列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    properties:
+                      list:
+                        type: array
+                        items: { $ref: "#/components/schemas/Upload" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/uploads/{id}:
+    delete:
+      tags: [Upload]
+      summary: 删除上传文件
+      description: |
+        AdminOnly。删除顺序：先查引用 → 有引用返回 409 + 引用文章列表 → 管理员确认后强制删除 → 先删 OSS → 成功才删 DB。
+      operationId: adminDeleteUpload
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: force
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: 有引用时管理员确认后传 true 强制删除（可选）
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: 文件被文章引用，需管理员确认
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadConflictResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 统计 ====================
+  /api/admin/stats:
+    get:
+      tags: [Stats]
+      summary: 后台统计
+      description: AdminOnly。后台首页卡片数据。
+      operationId: adminStats
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      responses:
+        "200":
+          description: 统计数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Authorization: Bearer <JWT>"
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+      description: 资源 id
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 页码，从 1 开始
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      description: 每页条数，最大 100
+
+  responses:
+    SuccessNoData:
+      description: 成功（无返回数据）
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code: { type: integer, example: 0 }
+              message: { type: string, example: "成功" }
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 400, message: "请求参数错误" }
+    Unauthorized:
+      description: 未授权（未登录 / token 无效或过期）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 401, message: "未授权" }
+    Forbidden:
+      description: 无权限（非管理员 / 用户被禁用）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 403, message: "禁止访问" }
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 404, message: "资源不存在" }
+    Conflict:
+      description: 资源冲突（如重名 / 已存在）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 409, message: "资源冲突" }
+    TooManyRequests:
+      description: 触发限流
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 429, message: "请求过于频繁，请稍后再试" }
+    InternalError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example: { code: 500, message: "服务器内部错误" }
+
+  schemas:
+    # ===== 通用 =====
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务错误码（见「错误码」说明）
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+          description: 附加数据（如引用文章列表）
+
+    PageMeta:
+      type: object
+      required: [list, total, page, page_size, total_page]
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: 总记录数
+        page:
+          type: integer
+          description: 当前页码
+        page_size:
+          type: integer
+          description: 每页条数
+        total_page:
+          type: integer
+          description: 总页数
+
+    IdData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          type: object
+          properties:
+            id: { type: integer }
+
+    # ===== 用户 =====
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        nickname:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+        avatar:
+          type: string
+          nullable: true
+        role:
+          type: integer
+          description: 1=管理员 2=普通用户
+        status:
+          type: integer
+          description: 1=正常 2=禁用
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UserData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data: { $ref: "#/components/schemas/User" }
+
+    LoginData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          type: object
+          required: [token, user]
+          properties:
+            token: { type: string, description: JWT，有效期 7 天 }
+            user: { $ref: "#/components/schemas/User" }
+
+    CommentUser:
+      type: object
+      description: 评论作者（仅展示昵称/头像）
+      properties:
+        id: { type: integer }
+        nickname: { type: string }
+        avatar:
+          type: string
+          nullable: true
+
+    # ===== 文章 =====
+    CategoryBrief:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    TagBrief:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    ArticleListItem:
+      type: object
+      description: 文章列表项（不含 content）
+      properties:
+        id: { type: integer }
+        author_id: { type: integer }
+        title: { type: string }
+        summary:
+          type: string
+          nullable: true
+        cover:
+          type: string
+          nullable: true
+          description: 空时前端显示默认封面
+        views:
+          type: integer
+          description: 浏览量 = MySQL views + Redis 未回写增量
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        author: { $ref: "#/components/schemas/CommentUser" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/CategoryBrief" }
+        tags:
+          type: array
+          items: { $ref: "#/components/schemas/TagBrief" }
+
+    AdminArticleListItem:
+      type: object
+      description: 后台文章列表项（含草稿状态）
+      properties:
+        id: { type: integer }
+        author_id: { type: integer }
+        title: { type: string }
+        summary:
+          type: string
+          nullable: true
+        cover:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          description: 1=草稿 2=发布
+        views: { type: integer }
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/CategoryBrief" }
+        tags:
+          type: array
+          items: { $ref: "#/components/schemas/TagBrief" }
+
+    ArticleDetail:
+      type: object
+      description: 文章详情（含正文）
+      properties:
+        id: { type: integer }
+        author_id: { type: integer }
+        title: { type: string }
+        summary:
+          type: string
+          nullable: true
+        content:
+          type: string
+          description: Markdown 原文
+        cover:
+          type: string
+          nullable: true
+        views: { type: integer }
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        author: { $ref: "#/components/schemas/CommentUser" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/CategoryBrief" }
+        tags:
+          type: array
+          items: { $ref: "#/components/schemas/TagBrief" }
+
+    ArticleDetailData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data: { $ref: "#/components/schemas/ArticleDetail" }
+
+    AdminArticleDetail:
+      allOf:
+        - $ref: "#/components/schemas/ArticleDetail"
+        - type: object
+          properties:
+            status:
+              type: integer
+              description: 1=草稿 2=发布
+            category_ids:
+              type: array
+              items: { type: integer }
+              description: 已关联分类 id，编辑页预选用
+            tag_ids:
+              type: array
+              items: { type: integer }
+              description: 已关联标签 id，编辑页预选用
+
+    AdminArticleDetailData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data: { $ref: "#/components/schemas/AdminArticleDetail" }
+
+    ArticleWriteRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        summary:
+          type: string
+          maxLength: 500
+          nullable: true
+        content:
+          type: string
+          description: Markdown 原文
+        cover:
+          type: string
+          maxLength: 255
+          nullable: true
+        status:
+          type: integer
+          enum: [1, 2]
+          default: 1
+          description: 1=草稿 2=发布；首次变 2 时写 published_at
+        category_ids:
+          type: array
+          items: { type: integer }
+          description: 分类 id 数组，全量替换
+        tag_ids:
+          type: array
+          items: { type: integer }
+          description: 标签 id 数组，全量替换
+
+    # ===== 分类 / 标签 =====
+    Category:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        article_count:
+          type: integer
+          description: 已发布且未删除文章数
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Tag:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        article_count:
+          type: integer
+          description: 已发布且未删除文章数
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CategoryWriteRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+
+    TagWriteRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+
+    # ===== 评论 =====
+    Comment:
+      type: object
+      description: 评论（含二级回复）
+      properties:
+        id: { type: integer }
+        article_id: { type: integer }
+        user_id:
+          type: integer
+          nullable: true
+        parent_id:
+          type: integer
+          nullable: true
+          description: 一级=NULL；二级=所属一级评论 id
+        reply_to_id:
+          type: integer
+          nullable: true
+          description: 实际回复对象，仅用于「张三 → 李四」展示
+        content: { type: string }
+        is_top:
+          type: integer
+          enum: [0, 1]
+          description: 1=置顶（仅一级评论）
+        top_time:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+        user:
+          $ref: "#/components/schemas/CommentUser"
+          nullable: true
+          description: null 时显示「已注销用户」
+        deleted:
+          type: boolean
+          description: true 时前台显示「该评论已删除」
+        replies:
+          type: array
+          description: 二级评论（仅一级评论下有）
+          items: { $ref: "#/components/schemas/Comment" }
+
+    CommentData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data: { $ref: "#/components/schemas/Comment" }
+
+    AdminComment:
+      type: object
+      description: 后台评论列表项（扁平，不含嵌套 replies）
+      properties:
+        id: { type: integer }
+        article_id: { type: integer }
+        article_title:
+          type: string
+          description: 所属文章标题（后台列表展示用）
+        user_id:
+          type: integer
+          nullable: true
+        user_nickname:
+          type: string
+          nullable: true
+        parent_id:
+          type: integer
+          nullable: true
+        reply_to_id:
+          type: integer
+          nullable: true
+        content: { type: string }
+        is_top:
+          type: integer
+          enum: [0, 1]
+        top_time:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+
+    # ===== 上传 =====
+    Upload:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        scene:
+          type: string
+          enum: [article, avatar]
+        filename: { type: string }
+        url: { type: string }
+        size:
+          type: integer
+          format: int64
+          description: 字节
+        mime: { type: string }
+        created_at: { type: string, format: date-time }
+
+    UploadData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          type: object
+          properties:
+            id: { type: integer }
+            url: { type: string }
+
+    UploadConflictResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              description: 引用该文件的文章列表
+              properties:
+                articles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      title: { type: string }
+                      status:
+                        type: integer
+                        description: 1=草稿 2=发布
+
+    # ===== 统计 =====
+    StatsData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          type: object
+          properties:
+            article_count: { type: integer, description: 文章总数（含草稿） }
+            comment_count: { type: integer, description: 评论总数 }
+            user_count: { type: integer, description: 用户总数 }
+            total_views: { type: integer, format: int64, description: 总浏览量 }
