@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS comments (
   user_id     BIGINT UNSIGNED NULL COMMENT '可空，用户注销后为 NULL，前台显示「已注销用户」',
   parent_id   BIGINT UNSIGNED NULL COMMENT '一级=NULL；二级=所属一级评论 id（恒指一级，不产生三级）',
   reply_to_id BIGINT UNSIGNED NULL COMMENT '实际回复对象，仅展示用，无外键',
-  content     VARCHAR(1000) NOT NULL,
+  content     VARCHAR(400) NOT NULL COMMENT '评论内容，最多 400 字',
   is_top      TINYINT       NOT NULL DEFAULT 0 COMMENT '1=置顶（仅一级评论可置顶）',
   top_time    DATETIME      NULL COMMENT '置顶时间，多条置顶按它倒序',
   created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,

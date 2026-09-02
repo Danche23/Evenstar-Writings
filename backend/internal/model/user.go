@@ -1,4 +1,4 @@
-package entity
+package model
 
 // User 用户表（单管理员 + 注册访客）
 type User struct {

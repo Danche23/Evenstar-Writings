@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evenstar Writings · 全站原型（单页）</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ======================= 顶部原型导航条（仅原型用，非正式 UI） ======================= -->
+  <nav class="proto-nav">
+    <span class="plogo">Evenstar 原型</span>
+    <span class="glabel">前台</span>
+    <a href="javascript:void(0)" data-nav="home">首页</a>
+    <a href="javascript:void(0)" data-nav="articles">文章列表</a>
+    <a href="javascript:void(0)" data-nav="article">文章详情</a>
+    <a href="javascript:void(0)" data-nav="categories">分类</a>
+    <a href="javascript:void(0)" data-nav="tags">标签</a>
+    <a href="javascript:void(0)" data-nav="login">登录</a>
+    <a href="javascript:void(0)" data-nav="register">注册</a>
+    <a href="javascript:void(0)" data-nav="forgot">忘记密码</a>
+    <a href="javascript:void(0)" data-nav="profile">个人中心</a>
+    <span class="glabel">后台</span>
+    <a href="javascript:void(0)" data-nav="admin">后台首页</a>
+    <a href="javascript:void(0)" data-nav="admin-articles">文章管理</a>
+    <a href="javascript:void(0)" data-nav="editor">写文章</a>
+    <a href="javascript:void(0)" data-nav="admin-categories">分类管理</a>
+    <a href="javascript:void(0)" data-nav="admin-tags">标签管理</a>
+    <a href="javascript:void(0)" data-nav="admin-comments">评论管理</a>
+    <a href="javascript:void(0)" data-nav="admin-users">用户管理</a>
+    <a href="javascript:void(0)" data-nav="admin-uploads">上传管理</a>
+  </nav>
+
+  <!-- ======================= 前台顶部导航 ======================= -->
+  <header class="site-header" id="frontHeader">
+    <div class="header-inner">
+      <a class="logo" href="javascript:void(0)" onclick="show('home')">
+        <span class="logo-mark">E</span><span>Evenstar Writings</span>
+      </a>
+      <nav class="main-nav">
+        <a href="javascript:void(0)" data-nav="home" onclick="show('home')">首页</a>
+        <a href="javascript:void(0)" data-nav="articles" onclick="show('articles')">文章</a>
+        <a href="javascript:void(0)" data-nav="categories" onclick="show('categories')">分类</a>
+        <a href="javascript:void(0)" data-nav="tags" onclick="show('tags')">标签</a>
+      </nav>
+      <div class="header-actions">
+        <a href="javascript:void(0)" class="btn btn-outline btn-sm" onclick="show('login')">登录</a>
+        <a href="javascript:void(0)" class="btn btn-primary btn-sm" onclick="show('register')">注册</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================= 前台页面视图 ======================= -->
+
+  <!-- 首页 -->
+  <section class="view" id="view-home">
+    <main class="container">
+      <div class="hero">
+        <div class="hero-cat">最新发布</div>
+        <h1>用 Go + Gin 从零搭建一个属于你自己的个人博客</h1>
+        <p>记录我这一路踩过的坑：JWT 鉴权、Redis 浏览量计数、评论两级回复、阿里云 OSS 上传……希望对你也有用。</p>
+        <div class="hero-meta">
+          <span>Evenstar · 2026-08-28</span>
+          <span>· 阅读 1,284</span>
+          <a class="read" href="javascript:void(0)" onclick="show('article')">阅读全文 →</a>
+        </div>
+      </div>
+
+      <div class="home-cols">
+        <div>
+          <div class="section-title">最新文章 <a class="more" href="javascript:void(0)" onclick="show('articles')">查看全部 →</a></div>
+
+          <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+            <div class="thumb">📄</div>
+            <div class="body">
+              <div class="cat">后端开发</div>
+              <h3>Go 语言 Gin 框架的中间件到底是怎么跑起来的？</h3>
+              <div class="summary">从一次登录鉴权的需求出发，拆解 Gin 中间件的执行链路，手写一个 JWT 校验中间件。</div>
+              <div class="meta"><span>Evenstar</span><span>2026-08-25</span><span>👁 892</span><span class="badge badge-gray">3 条评论</span></div>
+            </div>
+          </a>
+
+          <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+            <div class="thumb">🐳</div>
+            <div class="body">
+              <div class="cat">部署运维</div>
+              <h3>Docker Compose 编排 Gin + MySQL + Redis + Nginx 全家桶</h3>
+              <div class="summary">一份 docker-compose.yml 搞定前后端分离博客的本地与服务器部署，附 Nginx 反代 /api 配置。</div>
+              <div class="meta"><span>Evenstar</span><span>2026-08-20</span><span>👁 1,023</span><span class="badge badge-gray">8 条评论</span></div>
+            </div>
+          </a>
+
+          <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+            <div class="thumb">📝</div>
+            <div class="body">
+              <div class="cat">前端开发</div>
+              <h3>Vue3 + Element Plus 搭建博客后台管理界面</h3>
+              <div class="summary">从路由守卫到表格分页，聊聊一个简洁后台管理系统需要哪些基础组件。</div>
+              <div class="meta"><span>Evenstar</span><span>2026-08-15</span><span>👁 756</span><span class="badge badge-gray">2 条评论</span></div>
+            </div>
+          </a>
+
+          <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+            <div class="thumb">🔐</div>
+            <div class="body">
+              <div class="cat">后端开发</div>
+              <h3>注册登录里的滑块验证：阿里云验证码 2.0 接入实录</h3>
+              <div class="summary">为什么滑块要服务端二次校验、失败几次才弹滑块，以及 Go SDK 的正确用法。</div>
+              <div class="meta"><span>Evenstar</span><span>2026-08-10</span><span>👁 641</span><span class="badge badge-gray">5 条评论</span></div>
+            </div>
+          </a>
+        </div>
+
+        <aside>
+          <div class="card hot-card">
+            <h4>热门文章</h4>
+            <ol class="hot-list">
+              <li><a href="javascript:void(0)" onclick="show('article')">用 Go + Gin 从零搭建个人博客</a><span class="views">1,284</span></li>
+              <li><a href="javascript:void(0)" onclick="show('article')">Docker Compose 全家桶部署</a><span class="views">1,023</span></li>
+              <li><a href="javascript:void(0)" onclick="show('article')">Gin 中间件执行链路拆解</a><span class="views">892</span></li>
+              <li><a href="javascript:void(0)" onclick="show('article')">Vue3 后台管理界面</a><span class="views">756</span></li>
+              <li><a href="javascript:void(0)" onclick="show('article')">阿里云滑块验证接入</a><span class="views">641</span></li>
+            </ol>
+          </div>
+
+          <div class="card widget-card">
+            <h4>分类</h4>
+            <div class="tag-cloud">
+              <span class="tag-chip" onclick="show('categories')">后端开发 (12)</span>
+              <span class="tag-chip" onclick="show('categories')">前端开发 (8)</span>
+              <span class="tag-chip" onclick="show('categories')">部署运维 (5)</span>
+              <span class="tag-chip" onclick="show('categories')">随笔 (4)</span>
+            </div>
+          </div>
+
+          <div class="card widget-card">
+            <h4>标签</h4>
+            <div class="tag-cloud">
+              <span class="tag-chip" onclick="show('tags')">Go</span>
+              <span class="tag-chip" onclick="show('tags')">Gin</span>
+              <span class="tag-chip" onclick="show('tags')">Vue3</span>
+              <span class="tag-chip" onclick="show('tags')">MySQL</span>
+              <span class="tag-chip" onclick="show('tags')">Redis</span>
+              <span class="tag-chip" onclick="show('tags')">Docker</span>
+              <span class="tag-chip" onclick="show('tags')">JWT</span>
+              <span class="tag-chip" onclick="show('tags')">OSS</span>
+            </div>
+          </div>
+
+          <div class="card widget-card">
+            <h4>关于</h4>
+            <p style="font-size:13px;color:var(--text-muted)">一个热爱技术与记录的程序员，这里是我的个人博客，欢迎交流。</p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </section>
+
+  <!-- 文章列表 -->
+  <section class="view" id="view-articles">
+    <main class="container">
+      <div class="page-head">
+        <div><h1>全部文章</h1><div class="sub">共 29 篇</div></div>
+        <div class="toolbar" style="margin-bottom:0">
+          <select class="input" style="width:140px"><option>全部分类</option><option>后端开发</option><option>前端开发</option><option>部署运维</option><option>随笔</option></select>
+          <input class="input" style="width:200px" placeholder="搜索文章…">
+        </div>
+      </div>
+
+      <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+        <div class="thumb">📄</div>
+        <div class="body">
+          <div class="cat">后端开发</div>
+          <h3>Go 语言 Gin 框架的中间件到底是怎么跑起来的？</h3>
+          <div class="summary">从一次登录鉴权的需求出发，拆解 Gin 中间件的执行链路，手写一个 JWT 校验中间件。</div>
+          <div class="meta"><span>Evenstar</span><span>2026-08-25</span><span>👁 892</span><span class="badge badge-gray">3 条评论</span></div>
+        </div>
+      </a>
+      <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+        <div class="thumb">🐳</div>
+        <div class="body">
+          <div class="cat">部署运维</div>
+          <h3>Docker Compose 编排 Gin + MySQL + Redis + Nginx 全家桶</h3>
+          <div class="summary">一份 docker-compose.yml 搞定前后端分离博客的本地与服务器部署。</div>
+          <div class="meta"><span>Evenstar</span><span>2026-08-20</span><span>👁 1,023</span><span class="badge badge-gray">8 条评论</span></div>
+        </div>
+      </a>
+      <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+        <div class="thumb">🔐</div>
+        <div class="body">
+          <div class="cat">后端开发</div>
+          <h3>注册登录里的滑块验证：阿里云验证码 2.0 接入实录</h3>
+          <div class="summary">为什么滑块要服务端二次校验、失败几次才弹滑块。</div>
+          <div class="meta"><span>Evenstar</span><span>2026-08-10</span><span>👁 641</span><span class="badge badge-gray">5 条评论</span></div>
+        </div>
+      </a>
+      <a class="article-card card" href="javascript:void(0)" onclick="show('article')">
+        <div class="thumb">📝</div>
+        <div class="body">
+          <div class="cat">前端开发</div>
+          <h3>Vue3 + Element Plus 搭建博客后台管理界面</h3>
+          <div class="summary">从路由守卫到表格分页，聊聊一个简洁后台管理系统需要哪些基础组件。</div>
+          <div class="meta"><span>Evenstar</span><span>2026-08-15</span><span>👁 756</span><span class="badge badge-gray">2 条评论</span></div>
+        </div>
+      </a>
+
+      <div class="pagination">
+        <span class="total">共 29 条</span>
+        <button class="pg" disabled>‹</button>
+        <button class="pg active">1</button>
+        <button class="pg">2</button>
+        <button class="pg">3</button>
+        <button class="pg">›</button>
+      </div>
+    </main>
+  </section>
+
+  <!-- 文章详情 -->
+  <section class="view" id="view-article">
+    <main class="container-narrow">
+      <div class="article-header">
+        <div class="cat-row">
+          <span class="badge badge-primary">后端开发</span>
+          <span class="badge badge-gray">Go</span>
+          <span class="badge badge-gray">Gin</span>
+          <span class="badge badge-gray">JWT</span>
+        </div>
+        <h1>用 Go + Gin 从零搭建一个属于你自己的个人博客</h1>
+        <div class="article-meta">
+          <span class="avatar">E</span>
+          <span>Evenstar</span>
+          <span>发布于 2026-08-28</span>
+          <span>👁 1,284 次浏览</span>
+        </div>
+      </div>
+
+      <div class="article-cover">文章封面图（cover 字段为空时显示前端默认封面）</div>
+
+      <article class="article-body">
+        <p>最近把自己一直想做的个人博客从零搭了起来，用了 <code>Go + Gin + MySQL + Redis</code>。这篇文章记录几个关键的实现点，也给想入门 Go Web 开发的朋友一个参考。</p>
+        <h2>1. 为什么要自己写博客</h2>
+        <p>现成的博客系统很多，但自己写一遍，才能真正理解一个 Web 应用是怎么运作的——路由、鉴权、数据库、缓存、部署，每个环节都踩一遍。</p>
+        <h2>2. 项目结构</h2>
+        <pre><code>backend/
+├── cmd/server        # 入口
+├── internal/
+│   ├── api           # 路由
+│   ├── handler       # 处理器
+│   ├── service       # 业务逻辑
+│   ├── repository    # 数据访问
+│   └── model         # 实体
+└── pkg/              # 通用工具</code></pre>
+        <h2>3. JWT 鉴权怎么做</h2>
+        <p>登录成功后签发一个 7 天有效的 JWT，前端存起来，每次请求通过 <code>Authorization: Bearer &lt;token&gt;</code> 带上，后端中间件校验。</p>
+        <blockquote>一个容易踩的坑：用户改密码或账号被禁用后，旧 token 应该立即失效。我在 JWT 里加了一个 token_version 字段，和数据库里的版本号比对，不一致就拒绝。</blockquote>
+        <h2>4. 小结</h2>
+        <p>整个博客的核心链路已经跑通，接下来会继续完善评论、上传和后台管理。如果你也在做类似的事，欢迎在下面评论区交流。</p>
+      </article>
+
+      <section class="comments">
+        <div class="comments-head"><h2>评论 <span style="font-size:14px;color:var(--text-faint)">（6）</span></h2></div>
+
+        <div class="comment-item top">
+          <div class="avatar">E</div>
+          <div class="content">
+            <div class="name">Evenstar <span class="badge badge-primary" style="margin-left:6px">📌 置顶</span></div>
+            <div class="text">欢迎来到评论区～ 关于代码有任何问题都可以在这里留言，我会尽量回复。</div>
+            <div class="foot"><span>2026-08-28</span><span class="reply-link" onclick="toast('回复（原型演示）')">回复</span></div>
+          </div>
+        </div>
+
+        <div class="comment-item">
+          <div class="avatar">张</div>
+          <div class="content">
+            <div class="name">张三</div>
+            <div class="text">写得很好！token_version 这个思路解决了我的疑惑，之前一直不知道改密码后怎么让旧 token 失效。</div>
+            <div class="foot"><span>2026-08-28</span><span class="reply-link" onclick="toast('回复（原型演示）')">回复</span></div>
+
+            <div class="comment-replies">
+              <div class="comment-item">
+                <div class="avatar">E</div>
+                <div class="content">
+                  <div class="name">Evenstar <span class="reply-arrow">→</span> 张三</div>
+                  <div class="text">谢谢支持！token_version 每次改密/重置/禁用时 +1，中间件里比对 tv 就行，很简单但很有效。</div>
+                  <div class="foot"><span>2026-08-28</span><span class="reply-link" onclick="toast('回复（原型演示）')">回复</span></div>
+                </div>
+              </div>
+              <div class="comment-item">
+                <div class="avatar">李</div>
+                <div class="content">
+                  <div class="name">李四 <span class="reply-arrow">→</span> 张三</div>
+                  <div class="text">同感，我之前用黑名单方案，还要存 Redis，麻烦多了。</div>
+                  <div class="foot"><span>2026-08-28</span><span class="reply-link" onclick="toast('回复（原型演示）')">回复</span></div>
+                </div>
+              </div>
+              <div class="comment-item">
+                <div class="avatar">赵</div>
+                <div class="content">
+                  <div class="name">赵六 <span class="reply-arrow">→</span> 李四</div>
+                  <div class="text">黑名单方案适合要主动踢人的场景，各有取舍。</div>
+                  <div class="foot"><span>2026-08-29</span><span class="reply-link" onclick="toast('回复（原型演示）')">回复</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment-item">
+          <div class="avatar gray">·</div>
+          <div class="content">
+            <div class="name" style="color:var(--text-faint)">已注销用户</div>
+            <div class="text deleted">该评论已删除</div>
+            <div class="foot"><span>2026-08-27</span></div>
+          </div>
+        </div>
+
+        <div class="comment-form card card-pad">
+          <div class="name" style="font-weight:600;margin-bottom:10px">发表评论</div>
+          <textarea class="input" maxlength="400" placeholder="写下你的评论…（最多 400 字，未登录点击写评论会弹登录）"></textarea>
+          <div class="actions">
+            <span class="login-tip">支持 Markdown 部分语法 · 文明评论 · 最多 400 字</span>
+            <a href="javascript:void(0)" class="btn btn-primary btn-sm" onclick="show('login')">登录后评论</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- 分类页 -->
+  <section class="view" id="view-categories">
+    <main class="container">
+      <div class="page-head"><div><h1>分类</h1><div class="sub">按分类浏览文章</div></div></div>
+      <div class="cat-grid">
+        <div class="card cat-card">
+          <div class="name"><a href="javascript:void(0)" onclick="show('articles')">后端开发</a></div>
+          <div class="desc">Go、Gin、数据库、微服务等后端技术实践与踩坑记录。</div>
+          <div class="count">12 篇文章</div>
+        </div>
+        <div class="card cat-card">
+          <div class="name"><a href="javascript:void(0)" onclick="show('articles')">前端开发</a></div>
+          <div class="desc">Vue3、Element Plus、工程化等前端相关笔记。</div>
+          <div class="count">8 篇文章</div>
+        </div>
+        <div class="card cat-card">
+          <div class="name"><a href="javascript:void(0)" onclick="show('articles')">部署运维</a></div>
+          <div class="desc">Docker、Nginx、服务器部署与运维经验。</div>
+          <div class="count">5 篇文章</div>
+        </div>
+        <div class="card cat-card">
+          <div class="name"><a href="javascript:void(0)" onclick="show('articles')">随笔</a></div>
+          <div class="desc">生活、读书、思考，与技术无关的碎碎念。</div>
+          <div class="count">4 篇文章</div>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- 标签页 -->
+  <section class="view" id="view-tags">
+    <main class="container">
+      <div class="page-head"><div><h1>标签</h1><div class="sub">按标签浏览文章</div></div></div>
+      <div class="card widget-card tags-page">
+        <div class="tag-cloud">
+          <span class="tag-chip" onclick="show('articles')">Go <span class="n">(15)</span></span>
+          <span class="tag-chip" onclick="show('articles')">Gin <span class="n">(12)</span></span>
+          <span class="tag-chip" onclick="show('articles')">Vue3 <span class="n">(8)</span></span>
+          <span class="tag-chip" onclick="show('articles')">MySQL <span class="n">(7)</span></span>
+          <span class="tag-chip" onclick="show('articles')">Redis <span class="n">(6)</span></span>
+          <span class="tag-chip" onclick="show('articles')">Docker <span class="n">(5)</span></span>
+          <span class="tag-chip" onclick="show('articles')">JWT <span class="n">(4)</span></span>
+          <span class="tag-chip" onclick="show('articles')">OSS <span class="n">(3)</span></span>
+          <span class="tag-chip" onclick="show('articles')">Nginx <span class="n">(3)</span></span>
+          <span class="tag-chip" onclick="show('articles')">Element Plus <span class="n">(5)</span></span>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- 登录 -->
+  <section class="view" id="view-login">
+    <main class="auth-wrap">
+      <div class="card auth-card">
+        <h1>登录</h1>
+        <div class="sub">欢迎回来，请登录你的账号</div>
+        <div class="field"><label>邮箱</label><input class="input" id="loginEmail" type="email" placeholder="you@example.com"></div>
+        <div class="field"><label>密码</label><input class="input" id="loginPassword" type="password" placeholder="请输入密码"></div>
+
+        <div class="captcha-box" id="loginCaptcha" style="display:none">
+          <div class="track" id="loginTrack">← 拖动滑块完成验证</div>
+          <div class="captcha-note">连续登录失败 3 次，请先完成滑块验证</div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="loginBtn" style="margin-top:6px">登录</button>
+        <div class="auth-footer">
+          <a href="javascript:void(0)" style="color:var(--text-muted)" onclick="show('forgot')">忘记密码？</a>
+          &nbsp;·&nbsp; 还没有账号？<a href="javascript:void(0)" onclick="show('register')">去注册</a>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- 注册 -->
+  <section class="view" id="view-register">
+    <main class="auth-wrap">
+      <div class="card auth-card">
+        <h1>注册</h1>
+        <div class="sub">注册后可发表评论，管理员不开放注册</div>
+        <div class="field"><label>用户名</label><input class="input" type="text" placeholder="用于登录的用户名"></div>
+        <div class="field"><label>邮箱</label><input class="input" type="email" placeholder="you@example.com"></div>
+        <div class="field">
+          <label>邮箱验证码</label>
+          <div class="input-row">
+            <input class="input" type="text" placeholder="6 位验证码">
+            <button class="btn btn-outline" id="regSendCode" style="white-space:nowrap">发送验证码</button>
+          </div>
+          <div class="hint" id="regCodeHint">点击「发送验证码」需先完成下方滑块验证</div>
+        </div>
+        <div class="field"><label>密码</label><input class="input" type="password" placeholder="8 位以上，含字母和数字"></div>
+        <div class="field"><label>昵称 <span style="color:var(--text-faint);font-weight:400">（选填）</span></label><input class="input" type="text" placeholder="不填将自动生成默认昵称"></div>
+
+        <div class="captcha-box" id="regCaptcha">
+          <div class="track" id="regTrack">← 拖动滑块完成验证</div>
+          <div class="captcha-note">发送验证码与注册均需完成滑块验证</div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="registerBtn" style="margin-top:6px">注册</button>
+        <div class="auth-footer">已有账号？<a href="javascript:void(0)" onclick="show('login')">去登录</a></div>
+      </div>
+    </main>
+  </section>
+
+  <!-- 忘记密码 -->
+  <section class="view" id="view-forgot">
+    <main class="auth-wrap">
+      <div class="card auth-card">
+        <h1>忘记密码</h1>
+        <div class="sub">通过邮箱验证码重置密码</div>
+        <div class="field"><label>邮箱</label><input class="input" type="email" placeholder="you@example.com"></div>
+        <div class="field">
+          <label>邮箱验证码</label>
+          <div class="input-row">
+            <input class="input" type="text" placeholder="6 位验证码">
+            <button class="btn btn-outline" style="white-space:nowrap" onclick="toast('验证码已发送（原型演示）','success')">发送验证码</button>
+          </div>
+        </div>
+        <div class="field"><label>新密码</label><input class="input" type="password" placeholder="8 位以上，含字母和数字"></div>
+
+        <div class="captcha-box">
+          <div class="track">← 拖动滑块完成验证</div>
+          <div class="captcha-note">重置密码需完成滑块验证</div>
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="toast('重置成功，请重新登录（原型演示）','success');show('login')">提交重置</button>
+        <div class="auth-footer"><a href="javascript:void(0)" onclick="show('login')">返回登录</a></div>
+      </div>
+    </main>
+  </section>
+
+  <!-- 个人中心 -->
+  <section class="view" id="view-profile">
+    <main class="profile-wrap">
+      <div class="card profile-head">
+        <div class="avatar-lg" id="profileAvatar">E</div>
+        <div class="info">
+          <h2>Evenstar</h2>
+          <div class="email">admin@evenstar.local</div>
+          <div style="margin-top:10px">
+            <button class="btn btn-outline btn-sm" id="uploadAvatarBtn">更换头像</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card profile-section">
+        <h3>基本资料</h3>
+        <div class="field"><label>昵称</label><input class="input" type="text" value="Evenstar"></div>
+        <div class="field"><label>邮箱</label><input class="input" type="email" value="admin@evenstar.local" readonly><div class="hint">邮箱不可修改（只读）</div></div>
+        <button class="btn btn-primary" onclick="toast('资料已保存（原型演示）','success')">保存资料</button>
+      </div>
+
+      <div class="card profile-section">
+        <h3>头像</h3>
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:12px">支持 JPG / PNG，≤ 5MB。每个用户每月最多更换 5 次头像。</p>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">本月已用额度</div>
+        <div class="quota-bar"><div class="fill" style="width:100%"></div></div>
+        <div class="upload-note">5 / 5 次（已用完，本月不可再更换）</div>
+      </div>
+
+      <div class="card profile-section">
+        <h3>修改密码</h3>
+        <div class="field"><label>当前密码</label><input class="input" type="password" placeholder="请输入当前密码"></div>
+        <div class="field"><label>新密码</label><input class="input" type="password" placeholder="8 位以上，含字母和数字"></div>
+        <div class="field"><label>确认新密码</label><input class="input" type="password" placeholder="再次输入新密码"></div>
+        <div class="hint" style="margin-bottom:12px">修改成功后所有设备将退出登录，需重新登录</div>
+        <button class="btn btn-primary" onclick="toast('密码已修改，请重新登录（原型演示）','success')">修改密码</button>
+      </div>
+    </main>
+  </section>
+
+  <!-- ======================= 后台布局 ======================= -->
+  <div class="admin-shell" id="adminShell" style="display:none">
+    <aside class="admin-side">
+      <div class="group">管理后台</div>
+      <a href="javascript:void(0)" data-nav="admin" onclick="show('admin')"><span class="icon">📊</span>后台首页</a>
+      <a href="javascript:void(0)" data-nav="admin-articles" onclick="show('admin-articles')"><span class="icon">📄</span>文章管理</a>
+      <a href="javascript:void(0)" data-nav="editor" onclick="show('editor')"><span class="icon">✏️</span>写文章</a>
+      <div class="group">内容</div>
+      <a href="javascript:void(0)" data-nav="admin-comments" onclick="show('admin-comments')"><span class="icon">💬</span>评论管理</a>
+      <a href="javascript:void(0)" data-nav="admin-categories" onclick="show('admin-categories')"><span class="icon">🗂️</span>分类管理</a>
+      <a href="javascript:void(0)" data-nav="admin-tags" onclick="show('admin-tags')"><span class="icon">🏷️</span>标签管理</a>
+      <div class="group">系统</div>
+      <a href="javascript:void(0)" data-nav="admin-users" onclick="show('admin-users')"><span class="icon">👥</span>用户管理</a>
+      <a href="javascript:void(0)" data-nav="admin-uploads" onclick="show('admin-uploads')"><span class="icon">📁</span>上传管理</a>
+      <a href="javascript:void(0)" onclick="show('home')"><span class="icon">↩️</span>返回前台</a>
+    </aside>
+
+    <main class="admin-main">
+
+      <!-- 后台首页 -->
+      <section class="view" id="view-admin">
+        <div class="admin-topbar">
+          <h1>后台首页</h1>
+          <div class="right"><a href="javascript:void(0)" class="btn btn-primary" onclick="show('editor')">✏️ 写文章</a></div>
+        </div>
+        <div class="stat-cards">
+          <div class="card stat-card"><div class="label">文章总数</div><div class="value">29</div><div class="delta">本月新增 4 篇</div></div>
+          <div class="card stat-card"><div class="label">评论总数</div><div class="value">126</div><div class="delta">本月新增 18 条</div></div>
+          <div class="card stat-card"><div class="label">注册用户</div><div class="value">48</div><div class="delta">本月新增 6 人</div></div>
+          <div class="card stat-card"><div class="label">总浏览量</div><div class="value">18,420</div><div class="delta">本月新增 2,130</div></div>
+        </div>
+
+        <div class="section-title" style="margin-top:0">最近文章 <a class="more" href="javascript:void(0)" onclick="show('admin-articles')">管理全部 →</a></div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>标题</th><th>状态</th><th>浏览量</th><th>发布时间</th></tr></thead>
+            <tbody>
+              <tr><td class="title-cell" onclick="show('admin-articles')">用 Go + Gin 从零搭建个人博客</td><td><span class="badge badge-success">已发布</span></td><td>1,284</td><td>2026-08-28</td></tr>
+              <tr><td class="title-cell">Gin 框架中间件执行链路拆解</td><td><span class="badge badge-success">已发布</span></td><td>892</td><td>2026-08-25</td></tr>
+              <tr><td class="title-cell">Docker Compose 全家桶部署</td><td><span class="badge badge-success">已发布</span></td><td>1,023</td><td>2026-08-20</td></tr>
+              <tr><td class="title-cell">Redis 限流的几种实现方式</td><td><span class="badge badge-gray">草稿</span></td><td>—</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 文章管理 -->
+      <section class="view" id="view-admin-articles">
+        <div class="admin-topbar"><h1>文章管理</h1><div class="right"><a href="javascript:void(0)" class="btn btn-primary" onclick="show('editor')">＋ 新建文章</a></div></div>
+        <div class="toolbar">
+          <select class="input" style="width:130px"><option>全部状态</option><option>草稿</option><option>已发布</option></select>
+          <input class="input" style="width:220px" placeholder="搜索标题…">
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>标题</th><th>状态</th><th>浏览量</th><th>发布时间</th><th style="width:130px">操作</th></tr></thead>
+            <tbody>
+              <tr><td class="title-cell">用 Go + Gin 从零搭建个人博客</td><td><span class="badge badge-success">已发布</span></td><td>1,284</td><td>2026-08-28</td><td class="ops"><a href="javascript:void(0)" onclick="show('editor')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('这篇文章')">删除</a></td></tr>
+              <tr><td class="title-cell">Gin 框架中间件执行链路拆解</td><td><span class="badge badge-success">已发布</span></td><td>892</td><td>2026-08-25</td><td class="ops"><a href="javascript:void(0)" onclick="show('editor')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('这篇文章')">删除</a></td></tr>
+              <tr><td class="title-cell">Docker Compose 全家桶部署</td><td><span class="badge badge-success">已发布</span></td><td>1,023</td><td>2026-08-20</td><td class="ops"><a href="javascript:void(0)" onclick="show('editor')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('这篇文章')">删除</a></td></tr>
+              <tr><td class="title-cell">Redis 限流的几种实现方式</td><td><span class="badge badge-gray">草稿</span></td><td>—</td><td>—</td><td class="ops"><a href="javascript:void(0)" onclick="show('editor')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('这篇文章')">删除</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination"><span class="total">共 29 条</span><button class="pg" disabled>‹</button><button class="pg active">1</button><button class="pg">2</button><button class="pg">3</button><button class="pg">›</button></div>
+      </section>
+
+      <!-- 评论管理 -->
+      <section class="view" id="view-admin-comments">
+        <div class="admin-topbar"><h1>评论管理</h1></div>
+        <div class="toolbar"><input class="input" style="width:240px" placeholder="按文章筛选评论…"></div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>文章</th><th>作者</th><th>等级</th><th>内容</th><th>置顶</th><th>时间</th><th style="width:150px">操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>用 Go + Gin 从零搭建个人博客</td><td>张三</td><td><span class="badge badge-primary">一级</span></td><td style="color:var(--text-muted)">token_version 这个思路解决了我的疑惑…</td>
+                <td><span class="badge badge-primary">已置顶</span></td><td>2026-08-28</td>
+                <td class="ops"><a href="javascript:void(0)" onclick="toast('已取消置顶（原型演示）','success')">取消置顶</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('这条评论')">删除</a></td>
+              </tr>
+              <tr>
+                <td>用 Go + Gin 从零搭建个人博客</td><td>李四</td><td><span class="badge badge-primary">一级</span></td><td style="color:var(--text-muted)">同感，我之前用黑名单方案…</td>
+                <td><a href="javascript:void(0)" style="color:var(--primary);font-size:13px" onclick="toast('已置顶该评论（原型演示）','success')">置顶</a></td><td>2026-08-28</td>
+                <td class="ops"><a href="javascript:void(0)" onclick="toast('已置顶该评论（原型演示）','success')">置顶</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('这条评论')">删除</a></td>
+              </tr>
+              <tr>
+                <td>Gin 框架中间件执行链路拆解</td><td>王五</td><td><span class="badge badge-gray">二级</span></td><td style="color:var(--text-muted)">回复二级评论的示例</td>
+                <td><span style="font-size:13px;color:var(--text-faint)">置顶</span></td><td>2026-08-25</td>
+                <td class="ops"><span style="font-size:13px;color:var(--text-faint)">二级评论不可置顶</span><a class="danger" href="javascript:void(0)" onclick="confirmDel('这条评论')">删除</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination"><span class="total">共 126 条</span><button class="pg" disabled>‹</button><button class="pg active">1</button><button class="pg">2</button><button class="pg">3</button><button class="pg">›</button></div>
+      </section>
+
+      <!-- 分类管理 -->
+      <section class="view" id="view-admin-categories">
+        <div class="admin-topbar"><h1>分类管理</h1><div class="right"><button class="btn btn-primary" onclick="toast('新建分类（原型演示）','success')">＋ 新建分类</button></div></div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>名称</th><th>别名</th><th>文章数</th><th>创建时间</th><th style="width:130px">操作</th></tr></thead>
+            <tbody>
+              <tr><td class="title-cell">后端开发</td><td>backend</td><td>12</td><td>2026-08-01</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑分类（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该分类')">删除</a></td></tr>
+              <tr><td class="title-cell">前端开发</td><td>frontend</td><td>8</td><td>2026-08-01</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑分类（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该分类')">删除</a></td></tr>
+              <tr><td class="title-cell">部署运维</td><td>devops</td><td>5</td><td>2026-08-03</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑分类（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该分类')">删除</a></td></tr>
+              <tr><td class="title-cell">随笔</td><td>essay</td><td>4</td><td>2026-08-05</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑分类（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该分类')">删除</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 标签管理 -->
+      <section class="view" id="view-admin-tags">
+        <div class="admin-topbar"><h1>标签管理</h1><div class="right"><button class="btn btn-primary" onclick="toast('新建标签（原型演示）','success')">＋ 新建标签</button></div></div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>名称</th><th>别名</th><th>文章数</th><th>创建时间</th><th style="width:130px">操作</th></tr></thead>
+            <tbody>
+              <tr><td class="title-cell">Go</td><td>go</td><td>15</td><td>2026-08-01</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑标签（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该标签')">删除</a></td></tr>
+              <tr><td class="title-cell">Gin</td><td>gin</td><td>12</td><td>2026-08-01</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑标签（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该标签')">删除</a></td></tr>
+              <tr><td class="title-cell">Vue3</td><td>vue3</td><td>8</td><td>2026-08-02</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑标签（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该标签')">删除</a></td></tr>
+              <tr><td class="title-cell">Redis</td><td>redis</td><td>6</td><td>2026-08-02</td><td class="ops"><a href="javascript:void(0)" onclick="toast('编辑标签（原型演示）')">编辑</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该标签')">删除</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 用户管理 -->
+      <section class="view" id="view-admin-users">
+        <div class="admin-topbar"><h1>用户管理</h1></div>
+        <div class="toolbar">
+          <select class="input" style="width:130px"><option>全部角色</option><option>管理员</option><option>普通用户</option></select>
+          <input class="input" style="width:220px" placeholder="搜索用户名 / 邮箱…">
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>用户</th><th>邮箱</th><th>角色</th><th>状态</th><th>注册时间</th><th style="width:130px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><div class="u-cell"><span class="u-avatar">E</span><span class="title-cell">Evenstar</span></div></td><td>admin@evenstar.local</td><td><span class="badge badge-primary">管理员</span></td><td><span class="badge badge-success">正常</span></td><td>2026-08-01</td><td class="ops"><a href="javascript:void(0)" onclick="toast('禁用用户（原型演示）')">禁用</a></td></tr>
+              <tr><td><div class="u-cell"><span class="u-avatar">张</span><span class="title-cell">张三</span></div></td><td>zhangsan@example.com</td><td><span class="badge badge-gray">普通用户</span></td><td><span class="badge badge-success">正常</span></td><td>2026-08-05</td><td class="ops"><a href="javascript:void(0)" onclick="toast('禁用用户（原型演示）')">禁用</a></td></tr>
+              <tr><td><div class="u-cell"><span class="u-avatar">李</span><span class="title-cell">李四</span></div></td><td>lisi@example.com</td><td><span class="badge badge-gray">普通用户</span></td><td><span class="badge badge-success">正常</span></td><td>2026-08-12</td><td class="ops"><a href="javascript:void(0)" onclick="toast('禁用用户（原型演示）')">禁用</a></td></tr>
+              <tr><td><div class="u-cell"><span class="u-avatar">王</span><span class="title-cell">王五</span></div></td><td>wangwu@example.com</td><td><span class="badge badge-gray">普通用户</span></td><td><span class="badge badge-danger">已禁用</span></td><td>2026-08-18</td><td class="ops"><a href="javascript:void(0)" onclick="toast('启用用户（原型演示）')">启用</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination"><span class="total">共 48 条</span><button class="pg" disabled>‹</button><button class="pg active">1</button><button class="pg">2</button><button class="pg">3</button><button class="pg">›</button></div>
+      </section>
+
+      <!-- 上传管理 -->
+      <section class="view" id="view-admin-uploads">
+        <div class="admin-topbar"><h1>上传管理</h1></div>
+        <div class="toolbar">
+          <select class="input" style="width:130px"><option>全部场景</option><option>article 文章图</option><option>avatar 头像</option></select>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table class="table">
+            <thead><tr><th>文件名</th><th>场景</th><th>大小</th><th>上传者</th><th>时间</th><th style="width:130px">操作</th></tr></thead>
+            <tbody>
+              <tr><td class="title-cell">cover-gin-blog.jpg</td><td><span class="badge badge-primary">article</span></td><td>2.3 MB</td><td>Evenstar</td><td>2026-08-28</td><td class="ops"><a href="javascript:void(0)" onclick="toast('已复制链接（原型演示）','success')">复制链接</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该文件')">删除</a></td></tr>
+              <tr><td class="title-cell">avatar-admin.png</td><td><span class="badge badge-gray">avatar</span></td><td>480 KB</td><td>Evenstar</td><td>2026-08-27</td><td class="ops"><a href="javascript:void(0)" onclick="toast('已复制链接（原型演示）','success')">复制链接</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该文件')">删除</a></td></tr>
+              <tr><td class="title-cell">docker-compose.png</td><td><span class="badge badge-primary">article</span></td><td>1.1 MB</td><td>Evenstar</td><td>2026-08-20</td><td class="ops"><a href="javascript:void(0)" onclick="toast('已复制链接（原型演示）','success')">复制链接</a><a class="danger" href="javascript:void(0)" onclick="confirmDel('该文件')">删除</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination"><span class="total">共 32 条</span><button class="pg" disabled>‹</button><button class="pg active">1</button><button class="pg">2</button><button class="pg">›</button></div>
+      </section>
+
+      <!-- 文章编辑器 -->
+      <section class="view" id="view-editor">
+        <div class="editor-wrap">
+          <div class="editor-head">
+            <h1>写文章</h1>
+            <div class="status-switch">
+              <button class="opt" id="statusDraft">草稿</button>
+              <button class="opt active" id="statusPublish">发布</button>
+              <button class="btn btn-primary" onclick="toast('已保存（原型演示）','success')">保存</button>
+            </div>
+          </div>
+
+          <div class="editor-grid">
+            <div class="full"><input class="input" style="font-size:20px;font-weight:600;padding:12px 14px" placeholder="文章标题"></div>
+            <div class="full"><textarea class="input" style="min-height:70px" placeholder="文章摘要（可选，用于列表展示）"></textarea></div>
+            <div class="full">
+              <div class="cover-upload" onclick="toast('封面上传（原型演示，实际走 POST /api/upload scene=article）','success')">
+                <span class="plus">＋</span>
+                <span>上传封面图（scene=article，≤ 5MB，可选）</span>
+                <span style="font-size:12px;color:var(--text-faint)">留空则前台显示默认封面</span>
+              </div>
+            </div>
+
+            <div class="card editor-pane">
+              <div class="pane-head">Markdown 编辑</div>
+              <textarea class="editor-textarea" id="mdInput" placeholder="在此输入 Markdown 正文…"># 标题
+
+正文段落，支持 **加粗**、*斜体*、`行内代码`。
+
+## 二级标题
+
+```go
+func main() {
+    fmt.Println("hello")
+}
+```
+
+> 引用内容示例</textarea>
+            </div>
+            <div class="card editor-pane">
+              <div class="pane-head">实时预览</div>
+              <div class="editor-preview" id="mdPreview"></div>
+            </div>
+
+            <div class="full">
+              <div class="field" style="margin-bottom:0">
+                <label>分类（多选）</label>
+                <div class="tag-cloud" style="margin-top:6px">
+                  <span class="tag-chip" style="background:var(--primary-50);color:var(--primary-600)">✓ 后端开发</span>
+                  <span class="tag-chip">前端开发</span>
+                  <span class="tag-chip">部署运维</span>
+                  <span class="tag-chip">随笔</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="full">
+              <div class="field" style="margin-bottom:0">
+                <label>标签（多选）</label>
+                <div class="tag-cloud" style="margin-top:6px">
+                  <span class="tag-chip" style="background:var(--primary-50);color:var(--primary-600)">✓ Go</span>
+                  <span class="tag-chip" style="background:var(--primary-50);color:var(--primary-600)">✓ Gin</span>
+                  <span class="tag-chip">Vue3</span>
+                  <span class="tag-chip">MySQL</span>
+                  <span class="tag-chip">Redis</span>
+                  <span class="tag-chip">Docker</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px">
+            <a href="javascript:void(0)" class="btn btn-ghost" onclick="show('admin-articles')">取消</a>
+            <button class="btn btn-outline" id="saveDraftBtn">保存草稿</button>
+            <button class="btn btn-primary" id="publishBtn">发布</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ======================= Footer（前台） ======================= -->
+  <footer class="site-footer" id="siteFooter">
+    <div class="footer-inner">
+      <a class="logo" href="javascript:void(0)" onclick="show('home')"><span class="logo-mark">E</span><span>Evenstar Writings</span></a>
+      <div class="footer-links">
+        <a href="javascript:void(0)" onclick="show('articles')">文章</a>
+        <a href="javascript:void(0)" onclick="show('categories')">分类</a>
+        <a href="javascript:void(0)" onclick="show('tags')">标签</a>
+        <a href="javascript:void(0)" onclick="show('login')">登录</a>
+      </div>
+      <div class="footer-copy">© 2026 Evenstar Writings · 记录技术与生活</div>
+    </div>
+  </footer>
+
+  <!-- ======================= 弹窗 / 提示 ======================= -->
+  <div class="modal-mask" id="modalMask">
+    <div class="modal">
+      <h3>确认删除</h3>
+      <p id="modalText">确定要删除吗？此操作不可撤销。</p>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn btn-danger" onclick="closeModal();toast('已删除（原型演示）','success')">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============ 视图路由 ============
+    var FRONT_VIEWS = ['home','articles','article','categories','tags','login','register','forgot','profile'];
+    var ADMIN_VIEWS = ['admin','admin-articles','admin-comments','admin-categories','admin-tags','admin-users','admin-uploads','editor'];
+
+    function show(name) {
+      var isAdmin = ADMIN_VIEWS.indexOf(name) >= 0;
+      // 顶部/侧栏/Footer 显隐
+      document.getElementById('frontHeader').style.display = isAdmin ? 'none' : '';
+      document.getElementById('adminShell').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('siteFooter').style.display = isAdmin ? 'none' : '';
+      // 视图切换
+      var views = document.querySelectorAll('.view');
+      for (var i = 0; i < views.length; i++) views[i].classList.remove('active');
+      var target = document.getElementById('view-' + name);
+      if (target) target.classList.add('active');
+      // 导航高亮（顶部原型条 + 前台 nav + 后台侧栏）
+      var navs = document.querySelectorAll('[data-nav]');
+      for (var j = 0; j < navs.length; j++) {
+        navs[j].classList.toggle('active', navs[j].getAttribute('data-nav') === name);
+      }
+      window.scrollTo(0, 0);
+    }
+
+    // 顶部原型导航条：补齐点击切换（proto-nav 链接只写了 data-nav，无 onclick）
+    var protoLinks = document.querySelectorAll('.proto-nav a[data-nav]');
+    for (var k = 0; k < protoLinks.length; k++) {
+      (function (link) {
+        link.addEventListener('click', function () { show(link.getAttribute('data-nav')); });
+      })(protoLinks[k]);
+    }
+
+    // ============ Toast ============
+    var toastEl = document.getElementById('toast');
+    function toast(msg, type) {
+      toastEl.textContent = msg;
+      toastEl.className = 'toast show ' + (type || '');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(function () { toastEl.className = 'toast'; }, 1800);
+    }
+
+    // ============ 删除确认弹窗 ============
+    function confirmDel(name) {
+      document.getElementById('modalText').textContent = '确定要删除' + name + '吗？此操作不可撤销。';
+      document.getElementById('modalMask').classList.add('show');
+    }
+    function closeModal() { document.getElementById('modalMask').classList.remove('show'); }
+    document.getElementById('modalMask').addEventListener('click', function (e) {
+      if (e.target === this) closeModal();
+    });
+
+    // ============ 登录：连续失败 3 次弹滑块 ============
+    var loginFailCount = 0, loginCaptchaDone = false;
+    var loginCaptcha = document.getElementById('loginCaptcha');
+    var loginTrack = document.getElementById('loginTrack');
+    document.getElementById('loginBtn').addEventListener('click', function () {
+      var email = document.getElementById('loginEmail').value;
+      var pwd = document.getElementById('loginPassword').value;
+      if (!email || !pwd) {
+        loginFailCount++;
+        if (loginFailCount >= 3) {
+          loginCaptcha.style.display = 'block';
+          toast('已连续失败 ' + loginFailCount + ' 次，请完成滑块验证', 'error');
+        } else {
+          toast('邮箱或密码错误（第 ' + loginFailCount + ' 次失败）', 'error');
+        }
+        return;
+      }
+      if (loginFailCount >= 3 && !loginCaptchaDone) { toast('请先完成滑块验证', 'error'); return; }
+      toast('登录成功（原型演示）', 'success');
+      setTimeout(function () { show('profile'); }, 900);
+    });
+    loginTrack.addEventListener('click', function () {
+      loginCaptchaDone = true;
+      loginCaptcha.classList.add('done');
+      loginTrack.textContent = '✓ 验证通过';
+    });
+
+    // ============ 注册：滑块必验 + 验证码倒计时 ============
+    var regCaptchaDone = false;
+    var regCaptcha = document.getElementById('regCaptcha');
+    var regTrack = document.getElementById('regTrack');
+    var regSendCode = document.getElementById('regSendCode');
+    var regCodeHint = document.getElementById('regCodeHint');
+    regTrack.addEventListener('click', function () {
+      regCaptchaDone = true;
+      regCaptcha.classList.add('done');
+      regTrack.textContent = '✓ 验证通过';
+    });
+    regSendCode.addEventListener('click', function () {
+      if (!regCaptchaDone) { toast('请先完成滑块验证', 'error'); return; }
+      var n = 60;
+      regSendCode.disabled = true;
+      var t = setInterval(function () {
+        n--;
+        regSendCode.textContent = n + 's 后重发';
+        if (n <= 0) { clearInterval(t); regSendCode.disabled = false; regSendCode.textContent = '发送验证码'; }
+      }, 1000);
+      regCodeHint.textContent = '验证码已发送至邮箱，60 秒内有效';
+      toast('验证码已发送', 'success');
+    });
+    document.getElementById('registerBtn').addEventListener('click', function () {
+      if (!regCaptchaDone) { toast('请先完成滑块验证', 'error'); return; }
+      toast('注册成功，已自动登录（原型演示）', 'success');
+      setTimeout(function () { show('profile'); }, 900);
+    });
+
+    // ============ 个人中心：头像额度 / 登出 ============
+    document.getElementById('uploadAvatarBtn').addEventListener('click', function () {
+      toast('本月头像上传次数已达上限（5/5），请下月再试', 'error');
+    });
+
+    // ============ 编辑器：状态切换 + Markdown 预览 ============
+    function setStatus(s) {
+      document.getElementById('statusDraft').classList.toggle('active', s === 'draft');
+      document.getElementById('statusPublish').classList.toggle('active', s === 'publish');
+    }
+    document.getElementById('statusDraft').addEventListener('click', function () { setStatus('draft'); });
+    document.getElementById('statusPublish').addEventListener('click', function () { setStatus('publish'); });
+    document.getElementById('saveDraftBtn').addEventListener('click', function () { setStatus('draft'); toast('已保存草稿（原型演示）', 'success'); });
+    document.getElementById('publishBtn').addEventListener('click', function () { setStatus('publish'); toast('已发布文章（原型演示）', 'success'); });
+
+    var mdInput = document.getElementById('mdInput');
+    var mdPreview = document.getElementById('mdPreview');
+    function renderPreview() {
+      var t = mdInput.value;
+      t = t.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+      t = t.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+      t = t.replace(/^# (.*)$/gm, '<h2>$1</h2>');
+      t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+      t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      t = t.replace(/^&gt; (.*)$/gm, '<blockquote>$1</blockquote>');
+      t = t.replace(/\n/g, '<br>');
+      mdPreview.innerHTML = t;
+    }
+    mdInput.addEventListener('input', renderPreview);
+    renderPreview();
+
+    // ============ 初始进入首页 ============
+    show('home');
+  </script>
+</body>
+</html>

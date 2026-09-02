@@ -1,31 +1,29 @@
 package api
 
 import (
+	"github.com/Danche23/Evenstar-Writings/internal/api/article"
+	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
+	"github.com/Danche23/Evenstar-Writings/internal/api/category"
+	"github.com/Danche23/Evenstar-Writings/internal/api/comment"
+	"github.com/Danche23/Evenstar-Writings/internal/api/tag"
+	"github.com/Danche23/Evenstar-Writings/internal/api/upload"
+	"github.com/Danche23/Evenstar-Writings/internal/api/user"
 	"github.com/Danche23/Evenstar-Writings/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Router 路由
+// Router 路由（整个 API 的总路由入口）
 type Router struct {
-	// ========== 在这里添加你的 Controller 字段 ==========
-	// userCtrl  *user.Controller
-	// authCtrl  *auth.Controller
+	// ========== 在这里添加各模块 Handler 字段（依赖注入） ==========
 }
 
 // NewRouter 创建路由
-func NewRouter(
-// ========== 在这里添加你的 Service 参数（依赖注入） ==========
-// userService service.UserService,
-// authService service.AuthService,
-) *Router {
-	return &Router{
-		// userCtrl: user.NewController(userService),
-		// authCtrl: auth.NewController(authService),
-	}
+func NewRouter() *Router {
+	return &Router{}
 }
 
-// Setup 设置路由
+// Setup 设置路由（总入口）
 func (r *Router) Setup(engine *gin.Engine) {
 	// 全局中间件
 	engine.Use(middleware.Recovery())
@@ -43,10 +41,13 @@ func (r *Router) Setup(engine *gin.Engine) {
 	// API 路由组
 	apiGroup := engine.Group("/api")
 	{
-		_ = apiGroup
-		// ========== 在这里注册你的路由 ==========
-		// r.authCtrl.RegisterRoutes(apiGroup)
-		// r.userCtrl.RegisterRoutes(apiGroup)
+		auth.RegisterRoutes(apiGroup)
+		user.RegisterRoutes(apiGroup)
+		article.RegisterRoutes(apiGroup)
+		category.RegisterRoutes(apiGroup)
+		tag.RegisterRoutes(apiGroup)
+		comment.RegisterRoutes(apiGroup)
+		upload.RegisterRoutes(apiGroup)
 	}
 }
 
