@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/Danche23/Evenstar-Writings/internal/model/entity"
+	"github.com/Danche23/Evenstar-Writings/internal/model"
 	"github.com/Danche23/Evenstar-Writings/pkg/logger"
 
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ import (
 // 密码未设置时生成随机强密码，仅在日志打印一次。
 func (a *App) ensureAdmin() {
 	var count int64
-	if err := a.mysqlDB.Model(&entity.User{}).Where("role = ?", 1).Count(&count).Error; err != nil {
+	if err := a.mysqlDB.Model(&model.User{}).Where("role = ?", 1).Count(&count).Error; err != nil {
 		logger.Warn("检测管理员账号失败", zap.Error(err))
 		return
 	}
@@ -50,7 +50,7 @@ func (a *App) ensureAdmin() {
 		return
 	}
 
-	admin := &entity.User{
+	admin := &model.User{
 		Username: username,
 		Password: string(hash),
 		Email:    email,

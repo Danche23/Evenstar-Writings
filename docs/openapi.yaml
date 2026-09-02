@@ -889,7 +889,7 @@ paths:
       tags: [Comment]
       summary: 发表评论
       description: |
-        需登录。内容 ≤ 1000 字。限流同用户 1 分钟 5 条。
+        需登录。内容 ≤ 400 字。限流同用户 1 分钟 5 条。
         层级规则（最多两级）：
         - 一级评论：不传 parent_id
         - 回复一级评论：parent_id = 一级评论 id
@@ -909,7 +909,7 @@ paths:
               properties:
                 content:
                   type: string
-                  maxLength: 1000
+                  maxLength: 400
                 parent_id:
                   type: integer
                   nullable: true

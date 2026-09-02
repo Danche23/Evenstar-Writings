@@ -1,4 +1,4 @@
-package entity
+package model
 
 import "time"
 
@@ -9,7 +9,7 @@ type Comment struct {
 	UserID    *uint      `gorm:"column:user_id" json:"user_id"`           // 可空，用户注销后为 NULL
 	ParentID  *uint      `gorm:"column:parent_id;index" json:"parent_id"` // 一级=NULL；二级=所属一级评论 id
 	ReplyToID *uint      `gorm:"column:reply_to_id" json:"reply_to_id"`   // 实际回复对象，仅展示「张三 → 李四」，无外键
-	Content   string     `gorm:"column:content;size:1000;not null" json:"content"`
+	Content   string     `gorm:"column:content;size:400;not null" json:"content"`
 	IsTop     int8       `gorm:"column:is_top;not null;default:0" json:"is_top"` // 1=置顶（仅一级评论可置顶）
 	TopTime   *time.Time `gorm:"column:top_time" json:"top_time"`                // 置顶时间，多条置顶按它倒序
 }

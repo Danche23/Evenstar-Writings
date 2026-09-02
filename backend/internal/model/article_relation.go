@@ -1,4 +1,4 @@
-package entity
+package model
 
 // ArticleCategory 文章-分类中间表（联合主键，硬删除）
 type ArticleCategory struct {
