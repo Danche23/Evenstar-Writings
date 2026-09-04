@@ -10,12 +10,20 @@ import (
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/api"
+	"github.com/Danche23/Evenstar-Writings/internal/api/article"
 	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
+	"github.com/Danche23/Evenstar-Writings/internal/api/category"
+	"github.com/Danche23/Evenstar-Writings/internal/api/comment"
+	"github.com/Danche23/Evenstar-Writings/internal/api/stats"
+	"github.com/Danche23/Evenstar-Writings/internal/api/tag"
+	"github.com/Danche23/Evenstar-Writings/internal/api/upload"
+	"github.com/Danche23/Evenstar-Writings/internal/api/user"
 	"github.com/Danche23/Evenstar-Writings/internal/repository"
 	"github.com/Danche23/Evenstar-Writings/internal/service"
 	"github.com/Danche23/Evenstar-Writings/pkg/config"
 	"github.com/Danche23/Evenstar-Writings/pkg/database"
 	"github.com/Danche23/Evenstar-Writings/pkg/logger"
+	"github.com/Danche23/Evenstar-Writings/pkg/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -24,11 +32,12 @@ import (
 
 // App 应用结构体
 type App struct {
-	cfg     *config.Config
-	mysqlDB *gorm.DB
-	redis   *redis.Client
-	router  *api.Router
-	server  *http.Server
+	cfg            *config.Config
+	mysqlDB        *gorm.DB
+	redis          *redis.Client
+	router         *api.Router
+	server         *http.Server
+	articleService *service.ArticleService
 }
 
 // NewApp 创建应用实例
@@ -60,6 +69,9 @@ func (a *App) Initialize(configPath string) error {
 
 	// 4. 初始化依赖
 	a.initDependencies()
+
+	// 4.5 启动定时任务（浏览量回写）
+	a.startCron()
 
 	// 5. 管理员初始化（首次启动且无管理员时创建）
 	a.ensureAdmin()
@@ -125,15 +137,51 @@ func (a *App) initDatabase() error {
 func (a *App) initDependencies() {
 	// ========== 创建 Repository ==========
 	userRepo := repository.NewUserRepository(a.mysqlDB)
+	articleRepo := repository.NewArticleRepository(a.mysqlDB)
+	categoryRepo := repository.NewCategoryRepository(a.mysqlDB)
+	tagRepo := repository.NewTagRepository(a.mysqlDB)
+	commentRepo := repository.NewCommentRepository(a.mysqlDB)
+	uploadRepo := repository.NewUploadRepository(a.mysqlDB)
 
 	// ========== 创建 Service ==========
-	authService := service.NewAuthService(userRepo)
+	mailService := service.NewMailService(&a.cfg.Mail)
+	authService := service.NewAuthService(userRepo, a.redis, mailService)
+	userService := service.NewUserService(userRepo)
+	articleService := service.NewArticleService(articleRepo, userRepo, categoryRepo, tagRepo, a.redis)
+	a.articleService = articleService
+	categoryService := service.NewCategoryService(categoryRepo)
+	tagService := service.NewTagService(tagRepo)
+	commentService := service.NewCommentService(commentRepo, userRepo, articleRepo, a.redis)
+	uploadService := service.NewUploadService(uploadRepo, articleRepo, storage.NewLocalStorage("./storage", "/uploads"), a.redis)
+	statsService := service.NewStatsService(a.mysqlDB)
 
 	// ========== 创建 Handler ==========
 	authHandler := auth.NewAuthHandler(authService)
+	userHandler := user.NewUserHandler(userService)
+	articleHandler := article.NewArticleHandler(articleService)
+	categoryHandler := category.NewCategoryHandler(categoryService)
+	tagHandler := tag.NewTagHandler(tagService)
+	commentHandler := comment.NewCommentHandler(commentService)
+	uploadHandler := upload.NewUploadHandler(uploadService)
+	statsHandler := stats.NewStatsHandler(statsService)
 
 	// ========== 创建 Router ==========
-	a.router = api.NewRouter(authHandler)
+	a.router = api.NewRouter(authHandler, userHandler, articleHandler, categoryHandler, tagHandler, commentHandler, uploadHandler, statsHandler)
+}
+
+// startCron 启动定时任务（浏览量回写，每 5 分钟）
+func (a *App) startCron() {
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			if a.articleService != nil {
+				if err := a.articleService.SyncViews(); err != nil {
+					logger.Error("浏览量回写失败", zap.Error(err))
+				}
+			}
+		}
+	}()
 }
 
 // initRouter 初始化路由

@@ -41,6 +41,10 @@ func HTTPStatus(code int) int {
 		return http.StatusUnauthorized
 	case code == CodeCaptchaRequired, code == CodeCaptchaVerifyFailed:
 		return http.StatusBadRequest
+	case code == CodeVerifyCodeError, code == CodeOldPasswordError, code == CodeCommentTopNotAllowed:
+		return http.StatusBadRequest
+	case code == CodeCannotOperateSelf:
+		return http.StatusForbidden
 
 	// 参数错误 2xxx
 	case code >= 2000 && code < 3000:

@@ -1,15 +1,49 @@
 package dto
 
 // 通用 DTO（跨模块复用）
-//
-// 约定（重要）：
-// 1. DTO 只负责 API 请求/响应的数据传输 + 参数校验（binding 标签），
-//    不写业务逻辑，也不直接复用 entity（避免把表结构直接暴露给前端）。
-// 2. 分页相关 DTO 放这里：PageRequest / PageResponse。
-//    注意：pkg/response 里已有 PageRequest/PageResponse（属于「统一响应外壳」的一部分），
-//    后续做分页接口时建议统一在 dto/common.go 定义分页 DTO，避免两处重复维护。
-//
-// 建议包含的 DTO：
-//   - PageRequest   分页请求参数（page / page_size）
-//   - PageResponse  分页响应结构（list / total / page / page_size / total_page）
-//   - IDRequest     通用「按 id 操作」的请求体（可选，视需要）
+
+// CommentUser 作者/评论者简略信息（id + nickname + avatar）
+type CommentUser struct {
+	ID       uint   `json:"id"`
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+}
+
+// CategoryBrief 分类简略信息
+type CategoryBrief struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
+// TagBrief 标签简略信息
+type TagBrief struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
+// PageData 分页响应数据（泛型，复用 list 结构）
+type PageData[T any] struct {
+	List      []T   `json:"list"`
+	Total     int64 `json:"total"`
+	Page      int   `json:"page"`
+	PageSize  int   `json:"page_size"`
+	TotalPage int   `json:"total_page"`
+}
+
+// NewPageData 构造分页数据
+func NewPageData[T any](list []T, total int64, page, size int) *PageData[T] {
+	totalPage := int(total) / size
+	if int(total)%size != 0 {
+		totalPage++
+	}
+	if list == nil {
+		list = []T{}
+	}
+	return &PageData[T]{
+		List:      list,
+		Total:     total,
+		Page:      page,
+		PageSize:  size,
+		TotalPage: totalPage,
+	}
+}
