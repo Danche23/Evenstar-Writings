@@ -29,6 +29,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	resp, err := h.authService.Login(req)
 	if err != nil {
+		// 1007 captcha_required：data.need_captcha=true 通知前端弹滑块
+		if biz, ok := err.(*apperrors.BizError); ok && biz.Code == apperrors.CodeCaptchaRequired {
+			response.ErrorWithData(c, biz.Code, biz.Message, gin.H{"need_captcha": true})
+			return
+		}
 		response.BizError(c, err)
 		return
 	}

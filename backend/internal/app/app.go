@@ -134,7 +134,7 @@ func (a *App) initDatabase() error {
 }
 
 // initDependencies 初始化依赖注入
-func (a *App) initDependencies() {
+func (a *App) initDependencies() error {
 	// ========== 创建 Repository ==========
 	userRepo := repository.NewUserRepository(a.mysqlDB)
 	articleRepo := repository.NewArticleRepository(a.mysqlDB)
@@ -143,16 +143,23 @@ func (a *App) initDependencies() {
 	commentRepo := repository.NewCommentRepository(a.mysqlDB)
 	uploadRepo := repository.NewUploadRepository(a.mysqlDB)
 
+	// ========== 存储实现（OSS 配置填齐则启用正式存储，否则本地 mock） ==========
+	uploadStorage, err := a.newUploadStorage()
+	if err != nil {
+		return err
+	}
+
 	// ========== 创建 Service ==========
 	mailService := service.NewMailService(&a.cfg.Mail)
-	authService := service.NewAuthService(userRepo, a.redis, mailService)
+	captchaService := service.NewCaptchaService(&a.cfg.Captcha)
+	authService := service.NewAuthService(userRepo, a.redis, mailService, captchaService)
 	userService := service.NewUserService(userRepo)
 	articleService := service.NewArticleService(articleRepo, userRepo, categoryRepo, tagRepo, a.redis)
 	a.articleService = articleService
 	categoryService := service.NewCategoryService(categoryRepo)
 	tagService := service.NewTagService(tagRepo)
 	commentService := service.NewCommentService(commentRepo, userRepo, articleRepo, a.redis)
-	uploadService := service.NewUploadService(uploadRepo, articleRepo, storage.NewLocalStorage("./storage", "/uploads"), a.redis)
+	uploadService := service.NewUploadService(uploadRepo, articleRepo, uploadStorage, a.redis)
 	statsService := service.NewStatsService(a.mysqlDB)
 
 	// ========== 创建 Handler ==========
@@ -167,6 +174,28 @@ func (a *App) initDependencies() {
 
 	// ========== 创建 Router ==========
 	a.router = api.NewRouter(authHandler, userHandler, articleHandler, categoryHandler, tagHandler, commentHandler, uploadHandler, statsHandler)
+	return nil
+}
+
+// newUploadStorage 根据 oss 配置选择存储实现：
+//   - bucket + endpoint(或 region) + access_key_id + access_key_secret 四项填齐 → 阿里云 OSS（初始化失败则启动失败，不静默回退）
+//   - 未填齐 → 本地 mock（开发期），仅提示缺哪些字段，不打印任何密钥
+func (a *App) newUploadStorage() (storage.Storage, error) {
+	ossCfg := &a.cfg.OSS
+	configured := ossCfg.Bucket != "" &&
+		(ossCfg.Endpoint != "" || ossCfg.Region != "") &&
+		ossCfg.AccessKeyID != "" &&
+		ossCfg.AccessKeySecret != ""
+	if !configured {
+		logger.Info("OSS 未启用（bucket / region|endpoint / access_key 未填齐），文件存储使用本地 mock：./storage")
+		return storage.NewLocalStorage("./storage", "/uploads"), nil
+	}
+	st, err := storage.NewOSSStorage(ossCfg)
+	if err != nil {
+		return nil, fmt.Errorf("OSS 初始化失败: %w", err)
+	}
+	logger.Info("已启用阿里云 OSS 文件存储")
+	return st, nil
 }
 
 // startCron 启动定时任务（浏览量回写，每 5 分钟）
