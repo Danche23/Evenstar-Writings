@@ -1,5 +1,37 @@
 package auth
 
-// 认证模块 Handler。
-// 职责：HTTP 请求处理、参数绑定/校验、调用 service、返回响应。
-// 在这里实现 AuthHandler（登录、注册、发验证码、找回密码等接口），代码你自己写。
+import (
+	"github.com/Danche23/Evenstar-Writings/internal/dto"
+	"github.com/Danche23/Evenstar-Writings/internal/service"
+	apperrors "github.com/Danche23/Evenstar-Writings/pkg/errors"
+	"github.com/Danche23/Evenstar-Writings/pkg/response"
+
+	"github.com/gin-gonic/gin"
+)
+
+// 认证模块
+type AuthHandler struct {
+	authService *service.AuthService
+}
+
+// 创建认证处理器
+func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+	return &AuthHandler{authService: authService}
+}
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	// 1. 绑定并校验请求参数
+	var req dto.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperrors.CodeInvalidParam, "请求参数错误")
+		return
+	}
+
+	resp, err := h.authService.Login(req)
+	if err != nil {
+		response.BizError(c, err)
+		return
+	}
+
+	response.Success(c, resp)
+}

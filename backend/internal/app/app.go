@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/api"
+	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
+	"github.com/Danche23/Evenstar-Writings/internal/repository"
+	"github.com/Danche23/Evenstar-Writings/internal/service"
 	"github.com/Danche23/Evenstar-Writings/pkg/config"
 	"github.com/Danche23/Evenstar-Writings/pkg/database"
 	"github.com/Danche23/Evenstar-Writings/pkg/logger"
@@ -121,14 +124,16 @@ func (a *App) initDatabase() error {
 // initDependencies 初始化依赖注入
 func (a *App) initDependencies() {
 	// ========== 创建 Repository ==========
-	// userRepo := repository.NewUserRepository(a.mysqlDB)
+	userRepo := repository.NewUserRepository(a.mysqlDB)
 
 	// ========== 创建 Service ==========
-	// userSvc := service.NewUserService(userRepo)
+	authService := service.NewAuthService(userRepo)
+
+	// ========== 创建 Handler ==========
+	authHandler := auth.NewAuthHandler(authService)
 
 	// ========== 创建 Router ==========
-	// 后续模块的 service 在此注入 NewRouter
-	a.router = api.NewRouter()
+	a.router = api.NewRouter(authHandler)
 }
 
 // initRouter 初始化路由
