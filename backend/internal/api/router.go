@@ -16,11 +16,12 @@ import (
 // Router 路由（整个 API 的总路由入口）
 type Router struct {
 	// ========== 在这里添加各模块 Handler 字段（依赖注入） ==========
+	authHandler *auth.AuthHandler
 }
 
 // NewRouter 创建路由
-func NewRouter() *Router {
-	return &Router{}
+func NewRouter(authHandler *auth.AuthHandler) *Router {
+	return &Router{authHandler: authHandler}
 }
 
 // Setup 设置路由（总入口）
@@ -31,7 +32,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 	engine.Use(middleware.CORS())
 
 	// 健康检查
-	engine.GET("/api/v1/health", func(c *gin.Context) {
+	engine.GET("/api/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "Evenstar API is running",
@@ -41,7 +42,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 	// API 路由组
 	apiGroup := engine.Group("/api")
 	{
-		auth.RegisterRoutes(apiGroup)
+		auth.RegisterRoutes(apiGroup, r.authHandler)
 		user.RegisterRoutes(apiGroup)
 		article.RegisterRoutes(apiGroup)
 		category.RegisterRoutes(apiGroup)

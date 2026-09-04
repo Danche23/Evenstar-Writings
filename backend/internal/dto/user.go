@@ -1,9 +1,35 @@
 package dto
 
-// 用户模块 DTO
-//
-// 建议包含的 DTO（字段参考 docs/openapi.yaml 的 user 相关接口）：
-//   - UserResponse         用户信息（脱敏后，绝不包含 password / token_version）
-//   - UpdateProfileRequest 修改个人资料（nickname / email / avatar）
-//   - ChangePasswordRequest 修改密码（old_password / new_password）
-//   - UserListResponse     后台用户管理列表（分页 + 角色/状态）
+import (
+	"time"
+
+	"github.com/Danche23/Evenstar-Writings/internal/model"
+)
+
+// UserResponse 对外返回的用户信息
+type UserResponse struct {
+	ID        uint      `json:"id"`
+	Username  string    `json:"username"`
+	Nickname  string    `json:"nickname"`
+	Email     string    `json:"email"`
+	Avatar    string    `json:"avatar"`
+	Role      int8      `json:"role"`   // 1=管理员 2=普通用户
+	Status    int8      `json:"status"` // 1=正常 2=禁用
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// ToUserResponse
+func ToUserResponse(u *model.User) UserResponse {
+	return UserResponse{
+		ID:        u.ID,
+		Username:  u.Username,
+		Nickname:  u.Nickname,
+		Email:     u.Email,
+		Avatar:    u.Avatar,
+		Role:      u.Role,
+		Status:    u.Status,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}
+}
