@@ -1,9 +1,17 @@
 package dto
 
-// 标签模块 DTO
-//
-// 建议包含的 DTO（字段参考 docs/openapi.yaml 的 tag 相关接口）：
-//   - CreateTagRequest 创建标签（name）
-//   - UpdateTagRequest 更新标签（name）
-//   - TagResponse      标签信息（id / name）
-//   - TagListResponse  标签列表
+import "time"
+
+// Tag 标签（含已发布文章数）
+type Tag struct {
+	ID           uint      `json:"id"`
+	Name         string    `json:"name"`
+	ArticleCount int64     `json:"article_count"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// TagWriteRequest 标签创建/编辑请求
+type TagWriteRequest struct {
+	Name string `json:"name" binding:"required,min=1,max=50"`
+}

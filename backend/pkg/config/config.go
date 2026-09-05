@@ -86,16 +86,17 @@ type MailConfig struct {
 
 // OSSConfig 阿里云 OSS 配置
 type OSSConfig struct {
+	Bucket          string `mapstructure:"bucket"`
+	Region          string `mapstructure:"region"` // Bucket 所在地域，如 cn-hangzhou；endpoint 留空时自动拼 oss-{region}.aliyuncs.com
 	Endpoint        string `mapstructure:"endpoint"`
 	AccessKeyID     string `mapstructure:"access_key_id"`
 	AccessKeySecret string `mapstructure:"access_key_secret"` // 建议走环境变量 OSS_ACCESS_KEY_SECRET
-	Bucket          string `mapstructure:"bucket"`
 }
 
 // CaptchaConfig 阿里云验证码 2.0 配置
 type CaptchaConfig struct {
-	SceneID         string `mapstructure:"scene_id"` // 验证场景 ID
-	Prefix          string `mapstructure:"prefix"`   // 身份标
+	SceneID         string `mapstructure:"scene_id"`        // 验证场景 ID
+	IdentityPrefix  string `mapstructure:"identity_prefix"` // 身份标（前端初始化 AliyunCaptcha 时使用）
 	AccessKeyID     string `mapstructure:"access_key_id"`
 	AccessKeySecret string `mapstructure:"access_key_secret"` // 建议走环境变量 CAPTCHA_ACCESS_KEY_SECRET
 	Endpoint        string `mapstructure:"endpoint"`          // captcha.cn-shanghai.aliyuncs.com
