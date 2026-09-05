@@ -10,12 +10,20 @@ import (
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/api"
+	"github.com/Danche23/Evenstar-Writings/internal/api/article"
 	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
+	"github.com/Danche23/Evenstar-Writings/internal/api/category"
+	"github.com/Danche23/Evenstar-Writings/internal/api/comment"
+	"github.com/Danche23/Evenstar-Writings/internal/api/stats"
+	"github.com/Danche23/Evenstar-Writings/internal/api/tag"
+	"github.com/Danche23/Evenstar-Writings/internal/api/upload"
+	"github.com/Danche23/Evenstar-Writings/internal/api/user"
 	"github.com/Danche23/Evenstar-Writings/internal/repository"
 	"github.com/Danche23/Evenstar-Writings/internal/service"
 	"github.com/Danche23/Evenstar-Writings/pkg/config"
 	"github.com/Danche23/Evenstar-Writings/pkg/database"
 	"github.com/Danche23/Evenstar-Writings/pkg/logger"
+	"github.com/Danche23/Evenstar-Writings/pkg/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -24,11 +32,12 @@ import (
 
 // App 应用结构体
 type App struct {
-	cfg     *config.Config
-	mysqlDB *gorm.DB
-	redis   *redis.Client
-	router  *api.Router
-	server  *http.Server
+	cfg            *config.Config
+	mysqlDB        *gorm.DB
+	redis          *redis.Client
+	router         *api.Router
+	server         *http.Server
+	articleService *service.ArticleService
 }
 
 // NewApp 创建应用实例
@@ -60,6 +69,9 @@ func (a *App) Initialize(configPath string) error {
 
 	// 4. 初始化依赖
 	a.initDependencies()
+
+	// 4.5 启动定时任务（浏览量回写）
+	a.startCron()
 
 	// 5. 管理员初始化（首次启动且无管理员时创建）
 	a.ensureAdmin()
@@ -122,18 +134,83 @@ func (a *App) initDatabase() error {
 }
 
 // initDependencies 初始化依赖注入
-func (a *App) initDependencies() {
+func (a *App) initDependencies() error {
 	// ========== 创建 Repository ==========
 	userRepo := repository.NewUserRepository(a.mysqlDB)
+	articleRepo := repository.NewArticleRepository(a.mysqlDB)
+	categoryRepo := repository.NewCategoryRepository(a.mysqlDB)
+	tagRepo := repository.NewTagRepository(a.mysqlDB)
+	commentRepo := repository.NewCommentRepository(a.mysqlDB)
+	uploadRepo := repository.NewUploadRepository(a.mysqlDB)
+
+	// ========== 存储实现（OSS 配置填齐则启用正式存储，否则本地 mock） ==========
+	uploadStorage, err := a.newUploadStorage()
+	if err != nil {
+		return err
+	}
 
 	// ========== 创建 Service ==========
-	authService := service.NewAuthService(userRepo)
+	mailService := service.NewMailService(&a.cfg.Mail)
+	captchaService := service.NewCaptchaService(&a.cfg.Captcha)
+	authService := service.NewAuthService(userRepo, a.redis, mailService, captchaService)
+	userService := service.NewUserService(userRepo)
+	articleService := service.NewArticleService(articleRepo, userRepo, categoryRepo, tagRepo, a.redis)
+	a.articleService = articleService
+	categoryService := service.NewCategoryService(categoryRepo)
+	tagService := service.NewTagService(tagRepo)
+	commentService := service.NewCommentService(commentRepo, userRepo, articleRepo, a.redis)
+	uploadService := service.NewUploadService(uploadRepo, articleRepo, uploadStorage, a.redis)
+	statsService := service.NewStatsService(a.mysqlDB)
 
 	// ========== 创建 Handler ==========
 	authHandler := auth.NewAuthHandler(authService)
+	userHandler := user.NewUserHandler(userService)
+	articleHandler := article.NewArticleHandler(articleService)
+	categoryHandler := category.NewCategoryHandler(categoryService)
+	tagHandler := tag.NewTagHandler(tagService)
+	commentHandler := comment.NewCommentHandler(commentService)
+	uploadHandler := upload.NewUploadHandler(uploadService)
+	statsHandler := stats.NewStatsHandler(statsService)
 
 	// ========== 创建 Router ==========
-	a.router = api.NewRouter(authHandler)
+	a.router = api.NewRouter(authHandler, userHandler, articleHandler, categoryHandler, tagHandler, commentHandler, uploadHandler, statsHandler)
+	return nil
+}
+
+// newUploadStorage 根据 oss 配置选择存储实现：
+//   - bucket + endpoint(或 region) + access_key_id + access_key_secret 四项填齐 → 阿里云 OSS（初始化失败则启动失败，不静默回退）
+//   - 未填齐 → 本地 mock（开发期），仅提示缺哪些字段，不打印任何密钥
+func (a *App) newUploadStorage() (storage.Storage, error) {
+	ossCfg := &a.cfg.OSS
+	configured := ossCfg.Bucket != "" &&
+		(ossCfg.Endpoint != "" || ossCfg.Region != "") &&
+		ossCfg.AccessKeyID != "" &&
+		ossCfg.AccessKeySecret != ""
+	if !configured {
+		logger.Info("OSS 未启用（bucket / region|endpoint / access_key 未填齐），文件存储使用本地 mock：./storage")
+		return storage.NewLocalStorage("./storage", "/uploads"), nil
+	}
+	st, err := storage.NewOSSStorage(ossCfg)
+	if err != nil {
+		return nil, fmt.Errorf("OSS 初始化失败: %w", err)
+	}
+	logger.Info("已启用阿里云 OSS 文件存储")
+	return st, nil
+}
+
+// startCron 启动定时任务（浏览量回写，每 5 分钟）
+func (a *App) startCron() {
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			if a.articleService != nil {
+				if err := a.articleService.SyncViews(); err != nil {
+					logger.Error("浏览量回写失败", zap.Error(err))
+				}
+			}
+		}
+	}()
 }
 
 // initRouter 初始化路由

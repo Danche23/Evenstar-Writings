@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN" data-page-node-id="z9X6aVf8145uwOfPc0F6dc">
+<head data-page-node-id="od8YCVfpJSAFbrC4rIEx4d">
+<meta charset="utf-8" data-page-node-id="GYGF82ZYDaiscyWGQpwOAI" />
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="60Ub8s5ka8Wt1D36Ht2eKN" />
+<title>Aliyun Captcha 2.0 联调向导页</title>
+<style>
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; max-width: 680px; margin: 24px auto; padding: 0 16px; color: #222; background:#fff; }
+  h1 { font-size: 20px; }
+  .tip { background:#f6f8fa; border:1px solid #ddd; border-radius:8px; padding:12px 14px; font-size:13px; line-height:1.8; color:#333; }
+  .field { margin: 8px 0; }
+  .field label { display:inline-block; width: 120px; font-weight:600; font-size:14px; }
+  .field input, .field select { width: 320px; padding:6px 8px; border:1px solid #bbb; border-radius:6px; font-size:14px; box-sizing:border-box; }
+  button.primary { background:#1677ff; color:#fff; border:0; border-radius:6px; padding:9px 18px; font-size:15px; cursor:pointer; }
+  textarea { width:100%; box-sizing:border-box; min-height:90px; font-size:12px; word-break:break-all; padding:8px; border:1px solid #ccc; border-radius:6px; }
+  .result { margin-top:14px; }
+  hr { margin:18px 0; border:none; border-top:1px solid #eee; }
+  code { background:#f0f0f0; padding:1px 5px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body data-page-node-id="UOW3vJjo8QRNK8KozffOTF">
+
+<h1 data-page-node-id="p6J4acJoJ8OQMW0cuPQlCG">Aliyun Captcha 2.0 联调向导页（滑动通过后自动调用后端）</h1>
+
+<div class="tip" data-page-node-id="iHleckpJI20f0AAWeSf0CZ">
+  <b data-page-node-id="aAVQNF70aMyzmeFNejeKXm">为什么这样设计：</b>阿里云要求<b data-page-node-id="51T4A2AXnAql3GgQ8efUHx">滑块验证与后端验签间隔 ≤ 90 秒</b>（超时返回 F019）。
+  本页在滑动成功的回调里<b data-page-node-id="nGWqSkYEGaQPSk8Ywl9WrE">立即自动</b>请求后端，无需人工复制凭证。
+  <br  data-page-node-id="d5vo1rG241Ktylycg36meU"/><b data-page-node-id="in0VWxtTThr3Uj1oLZpDnO">操作流程：</b>
+  <br  data-page-node-id="edWntg9ZoZvblx0b97Ub0q"/>0) 请通过 http://localhost:5173 访问本页（端口与后端 CORS 白名单一致）；
+  <br  data-page-node-id="PYCQuzzcMfiNekacVKsqpU"/>1) 首次填好后端地址 / prefix / SceneId（自动记忆）；选择操作并填字段；
+  <br  data-page-node-id="O4AA86dbyTGNocA4EnoGw7"/>2) 点「① 开始」按钮：页面自动刷新并初始化，<b>滑块会直接显示在页面下方</b>；直接滑动即可，无需再点按钮；
+  <br  data-page-node-id="1aMHRJZeuYPfZZWcWUb3ZT"/>3) 滑动通过后自动提交，下方显示后端返回；执行下一个操作重复上述即可（每次都是全新凭证）。
+  <br  data-page-node-id="k3BQEgo3t9GGnkmKY47ukq"/><b data-page-node-id="MszR8PCaoAof9hv0d2ZZ72">参数来源：</b>config.yaml 的 <code data-page-node-id="nBCOasH7gfliCzKwVcdgk7">captcha.scene_id</code>（场景ID）与 <code data-page-node-id="zzCS9oG76FMLK7LhoPgO8K">captcha.identity_prefix</code>（身份标）。本页不含任何 AccessKey。
+</div>
+
+<div class="field" data-page-node-id="XJ3X5svsCL1CLxXElB70jR"><label data-page-node-id="7BIywup9hEMScAaUcl82Np">后端地址</label><input id="f-api" value="http://localhost:8080" data-page-node-id="kZCjZVrTgKiqqdwIL2zxnC" /></div>
+<div class="field" data-page-node-id="tj83U00zY4xH15MaDthufe"><label data-page-node-id="DAm9rohGJKvQr73FmxUFJ5">region</label><input id="f-region" value="cn" data-page-node-id="iY3jaZyKm2FhI7Cv2waL89" /></div>
+<div class="field" data-page-node-id="GVKAOwdqm2j5sEgAAZZ90v"><label data-page-node-id="GDmH7667RtOLdk3pZAE0pD">身份标 prefix</label><input id="f-prefix" placeholder="config.yaml → captcha.identity_prefix" data-page-node-id="K31EcCkJEj6QVEHHLHYp8u" /></div>
+<div class="field" data-page-node-id="K5EQjR7LqMQq45sottlWa1"><label data-page-node-id="VUYVEMDfwzYSy7hwPQPvC2">场景ID SceneId</label><input id="f-scene" placeholder="config.yaml → captcha.scene_id" data-page-node-id="pzMQIsdTsb9aAZ0FPQN0kO" /></div>
+
+<hr  data-page-node-id="UiAz4sJByLvLPBM78pmZiU"/>
+
+<div class="field" data-page-node-id="KxAqPJejAG3y40nKgs8HVs"><label data-page-node-id="HRJ4acQCYQkMGlRg4HwTQJ">操作</label>
+  <select id="f-act" data-page-node-id="8GMMnEzmlF8TicvusV8tmv">
+    <option value="sendcode-register" data-page-node-id="nvJ1RnAqiA60WE7FVT6rVA">① send-code（注册）</option>
+    <option value="register" data-page-node-id="or9BasVE4j5ScQ4Crtt3GR">② 注册</option>
+    <option value="sendcode-reset" data-page-node-id="fZZGl1GkvVDPsJ60svleLQ">③ send-code（找回密码）</option>
+    <option value="reset" data-page-node-id="zKy8E6Pbfn9UVALLKMr8Uu">④ 找回密码</option>
+    <option value="login">⑤ 登录（连续失败 3 次后触发滑块解锁）</option>
+  </select>
+</div>
+<div class="field" data-page-node-id="7BTQkzTofzirkSH3voFuFK"><label data-page-node-id="5qO5Pi6QFqJm3jOUQygnnw">email</label><input id="f-email" placeholder="目标邮箱，如 758773857@qq.com" data-page-node-id="AWCFVbVzLT2F38yCTQzcaY" /></div>
+<div class="field" data-page-node-id="CyWvbTS8gh9PQvCAz9FO6v"><label data-page-node-id="2uyqRHhpCv5b0L1GLgB3W4">username</label><input id="f-username" placeholder="注册用用户名（仅②）" data-page-node-id="e6ssA1LASxMtVNBxmGNRQA" /></div>
+<div class="field" data-page-node-id="6k2cOHXrKuaMiyry1KOywg"><label data-page-node-id="HEIfFfLRc1xW8Mub8L2ImU">password</label><input id="f-password" placeholder="注册密码（仅②，≥8位含字母+数字）" data-page-node-id="d88NjThTmYyPpkuDXGvShQ" /></div>
+<div class="field" data-page-node-id="dLjHniuClGgyF2wHpNCGBZ"><label data-page-node-id="HlJBVLq09D7wV29Qi7hOsw">new_password</label><input id="f-newpwd" placeholder="新密码（仅④，≥8位含字母+数字）" data-page-node-id="xTAieODdm3WRyYInrvPp2v" /></div>
+<div class="field" data-page-node-id="B6PsuxjSeC8Sf3CqMZMQhv"><label data-page-node-id="jaqATmGlH88TH0HdBxNANn">邮箱验证码</label><input id="f-code" placeholder="查收邮箱/后端日志后填写（②④用）" data-page-node-id="TrFUtJ4klvHezB4cK1FSMB" /></div>
+
+<div data-page-node-id="UOSULXiRdPG34fHVS1rFvH">
+  <button class="primary" id="btn-run">① 开始（刷新后滑块将直接显示在下方，滑动即自动提交）</button>
+  <button class="ghost" id="btn-reset">重置（卡住时点我，清空状态）</button>
+</div>
+
+<div class="tip" id="diag" style="font-family:Consolas,monospace;white-space:pre-wrap;color:#c62828;">【自检面板】页面版本：v3（20:41，嵌入式滑块）
+</div>
+
+<div class="result" data-page-node-id="jlXmejzxdHsrZ5J8ZiAST0">
+  <label data-page-node-id="xCC2pqrtoQWjlVzwUhHLr5"><b data-page-node-id="MLHm8ecmbYFY79oC52d4zm">后端返回：</b></label>
+  <textarea id="out" readonly placeholder="执行后这里显示后端 JSON 响应"></textarea>
+</div>
+<div class="tip" id="status" data-page-node-id="vb5KbOwacWWhu2NXOIqmHq">状态：就绪。</div>
+
+<!-- 验证码弹窗挂载点（popup 模式由官方组件动态插入） -->
+<div id="captcha-element" data-page-node-id="w53Qzx7xRLc5zQ0J2YFXjV"></div>
+
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var LS = 'lt_captcha_wizard';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(LS) || '{}'); } catch (e) {}
+  // 记忆并自动回填（含表单字段，仅本机联调用；请勿在共享机器使用）
+  var MEM_FIELDS = ['api', 'region', 'prefix', 'scene', 'email', 'username', 'password', 'newpwd', 'code'];
+  MEM_FIELDS.forEach(function (k) {
+    var el = $('#f-' + k);
+    if (el && saved[k]) el.value = saved[k];
+  });
+  function persist() {
+    MEM_FIELDS.forEach(function (k) {
+      var el = $('#f-' + k);
+      saved[k] = el ? el.value.trim() : saved[k];
+    });
+    saved.actsel = $('#f-act').value;
+    localStorage.setItem(LS, JSON.stringify(saved));
+  }
+  if (saved.actsel) { $('#f-act').value = saved.actsel; }
+  diag('脚本已启动；已从本地记忆回填参数');
+  function show(m) { $('#status').textContent = '状态：' + m; }
+
+  // 自检输出：同时写到页面自检面板与 console，便于无 F12 也能定位问题
+  function diag(m) {
+    var d = $('#diag');
+    if (d) { d.innerHTML += '\n' + m; }
+    try { console.log('[CAPTCHA-DIAG]', m); } catch (e) {}
+  }
+
+  var act = new URLSearchParams(location.search).get('act') || $('#f-act').value; // 无 act 也能自动初始化
+
+  function loadJs(cb) {
+    if (window.AliyunCaptchaConfig) { cb(); return; }
+    window.AliyunCaptchaConfig = {
+      region: $('#f-region').value.trim() || 'cn',
+      prefix: $('#f-prefix').value.trim()
+    };
+    diag('准备加载官方 JS：https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js');
+    diag('AliyunCaptchaConfig = ' + JSON.stringify(window.AliyunCaptchaConfig));
+    var s = document.createElement('script');
+    s.src = 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js';
+    s.onload = function () { diag('官方 JS 加载成功，initAliyunCaptcha = ' + (typeof window.initAliyunCaptcha)); cb(); };
+    s.onerror = function () { diag('❌ 官方 JS 加载失败（网络/代理拦截了 o.alicdn.com）'); show('官方 JS 加载失败，请检查网络'); };
+    document.head.appendChild(s);
+  }
+
+  function initAuto() {
+    var prefix = $('#f-prefix').value.trim();
+    var scene = $('#f-scene').value.trim();
+    if (!prefix || !scene) { show('请先填写 prefix 与 SceneId，填好后刷新页面即可'); return; }
+    persist();
+    loadJs(function () {
+      diag('调用 initAliyunCaptcha：SceneId=' + scene + '，mode=embed，element=#captcha-element');
+      try {
+        window.initAliyunCaptcha({
+          SceneId: scene,
+          mode: 'embed',
+          element: '#captcha-element',
+          success: function (data) {
+            diag('滑动成功回调触发');
+            var p = typeof data === 'string' ? data : ((data && data.captchaVerifyParam) || '');
+            if (!p) { show('未取到凭证'); return; }
+            show('验证通过，正在自动调用后端…');
+            submit(act, p);
+          },
+          fail: function (r) { diag('滑动验证未通过：' + (r ? JSON.stringify(r) : '')); show('滑块验证未通过'); },
+          getInstance: function (inst) { diag('验证码实例已获取'); window.__captcha = inst; },
+          onError: function (errorInfo) { diag('❌ 官方初始化/资源错误：' + JSON.stringify(errorInfo)); },
+          slideStyle: { width: 360, height: 40 },
+          language: 'cn'
+        });
+        diag('initAliyunCaptcha 调用完成（未抛异常）');
+      } catch (e) {
+        diag('❌ 调用 initAliyunCaptcha 抛异常：' + (e && e.message ? e.message : e));
+        show('初始化失败，详见自检面板');
+      }
+      show('已初始化（动作：' + act + '）：滑块已嵌入页面下方，直接滑动即可');
+    });
+  }
+
+  function submit(a, param) {
+    var api = $('#f-api').value.trim().replace(/\/+$/, '');
+    var body;
+    if (a === 'sendcode-register' || a === 'sendcode-reset') {
+      body = { email: $('#f-email').value.trim(), type: a === 'sendcode-register' ? 'register' : 'reset', captcha_verify_param: param };
+    } else if (a === 'register') {
+      body = { username: $('#f-username').value.trim(), password: $('#f-password').value, email: $('#f-email').value.trim(), code: $('#f-code').value.trim(), captcha_verify_param: param };
+    } else if (a === 'reset') {
+      body = { email: $('#f-email').value.trim(), code: $('#f-code').value.trim(), new_password: $('#f-newpwd').value, captcha_verify_param: param };
+    } else if (a === 'login') {
+      body = { email: $('#f-email').value.trim(), password: $('#f-password').value, captcha_verify_param: param };
+    }
+    var path = a.indexOf('sendcode') === 0 ? 'send-code' : (a === 'register' ? 'register' : (a === 'login' ? 'login' : 'reset-password'));
+    fetch(api + '/api/auth/' + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.text(); }).then(function (t) {
+      $('#out').value = t;
+      try { var j = JSON.parse(t); show('后端返回 code=' + j.code + '，' + j.message); }
+      catch (e) { show('已返回（非 JSON），见下方输出'); }
+      $('#btn-run').textContent = '已完成 ✓ 页面即将自动重置…';
+      // 3 秒后自动回到起点（清除 act），避免旧验证实例残留导致下次无法弹窗
+      setTimeout(function () { location.href = location.pathname; }, 3000);
+    }).catch(function (e) { $('#out').value = '请求失败：' + e; show('请求失败，请确认后端地址与 CORS'); });
+  }
+
+  // 页面加载即自动初始化并把滑块嵌入下方；点击本按钮 = 刷新重新开始一次（每个操作前刷新一次）
+  $('#btn-run').addEventListener('click', function () {
+    persist();
+    location.href = location.pathname;
+    return;
+  });
+
+  // 重置：任何时候卡住/报错，点此回到干净起点（清除 act 与验证实例）
+  $('#btn-reset').addEventListener('click', function () {
+    location.href = location.pathname;
+  });
+
+  initAuto();
+})();
+</script>
+</body>
+</html>

@@ -1,9 +1,17 @@
 package dto
 
-// 分类模块 DTO
-//
-// 建议包含的 DTO（字段参考 docs/openapi.yaml 的 category 相关接口）：
-//   - CreateCategoryRequest 创建分类（name）
-//   - UpdateCategoryRequest 更新分类（name）
-//   - CategoryResponse      分类信息（id / name）
-//   - CategoryListResponse  分类列表
+import "time"
+
+// Category 分类（含已发布文章数）
+type Category struct {
+	ID           uint      `json:"id"`
+	Name         string    `json:"name"`
+	ArticleCount int64     `json:"article_count"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// CategoryWriteRequest 分类创建/编辑请求
+type CategoryWriteRequest struct {
+	Name string `json:"name" binding:"required,min=1,max=50"`
+}

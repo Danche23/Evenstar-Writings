@@ -29,6 +29,10 @@ const (
 	CodeTokenExpired        = 1006
 	CodeCaptchaRequired     = 1007
 	CodeCaptchaVerifyFailed = 1008
+	CodeVerifyCodeError     = 1009 // 验证码错误或已过期
+	CodeOldPasswordError    = 1010 // 旧密码错误
+	CodeCannotOperateSelf   = 1011 // 不能对自己执行此操作
+	CodeCommentTopNotAllowed = 1012 // 仅一级评论可置顶
 
 	// 参数错误 2xxx
 	CodeInvalidParam     = 2001
@@ -63,6 +67,10 @@ var codeMessages = map[int]string{
 	CodeTokenExpired:          "令牌已过期",
 	CodeCaptchaRequired:       "需要完成滑块验证",
 	CodeCaptchaVerifyFailed:   "滑块验证失败，请重试",
+	CodeVerifyCodeError:       "验证码错误或已过期",
+	CodeOldPasswordError:      "旧密码错误",
+	CodeCannotOperateSelf:     "不能对自己执行此操作",
+	CodeCommentTopNotAllowed:  "仅一级评论可置顶",
 	CodeInvalidParam:          "参数错误",
 	CodeMissingParam:          "缺少必要参数",
 	CodeParamFormatError:      "参数格式错误",
