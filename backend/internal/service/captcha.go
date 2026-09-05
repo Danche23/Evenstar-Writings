@@ -82,6 +82,12 @@ func (s *CaptchaService) Verify(captchaVerifyParam string) error {
 		return apperrors.New(apperrors.CodeInternalError, "验证服务异常，请稍后重试")
 	}
 	if !dara.BoolValue(resp.Body.Result.VerifyResult) {
+		// 诊断日志：记录阿里云返回的具体失败码（F0xx/Txxx），只进日志不下发前端
+		logger.Warn("阿里云验证码校验未通过",
+			zap.String("verifyCode", dara.StringValue(resp.Body.Result.VerifyCode)),
+			zap.String("respCode", dara.StringValue(resp.Body.Code)),
+			zap.String("respMessage", dara.StringValue(resp.Body.Message)),
+		)
 		return apperrors.NewDefault(apperrors.CodeCaptchaVerifyFailed)
 	}
 	return nil

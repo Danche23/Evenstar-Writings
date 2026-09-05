@@ -41,7 +41,12 @@ func (s *AuthService) Login(req dto.LoginRequest) (*dto.LoginResponse, error) {
 	ctx := context.Background()
 	failKey := fmt.Sprintf("auth:login:fail:%s", strings.ToLower(req.Email))
 
-	// 0. 连续失败达阈值后：无滑块 → 1007；有滑块 → 先校验（失败 1008）
+	// 0. 同邮箱 1 分钟最多 5 次登录（邮箱维度独立限流；与下方 IP 维度、连续失败滑块互不替代）
+	if err := s.checkLoginEmailLimit(ctx, req.Email); err != nil {
+		return nil, err
+	}
+
+	// 1. 连续失败达阈值后：无滑块 → 1007；有滑块 → 先校验（失败 1008）
 	if s.loginFailLocked(ctx, failKey) {
 		if req.CaptchaVerifyParam == "" {
 			return nil, apperrors.NewDefault(apperrors.CodeCaptchaRequired)
@@ -304,6 +309,25 @@ func (s *AuthService) loginFailed(ctx context.Context, key string) error {
 func (s *AuthService) loginFailLocked(ctx context.Context, key string) bool {
 	n, err := s.redis.Get(ctx, key).Int()
 	return err == nil && n >= loginFailThreshold
+}
+
+// checkLoginEmailLimit 同邮箱 1 分钟内登录次数上限（5 次）。
+// 与 IP 维度限流（RateLimit 中间件）、连续失败滑块互不替代，是独立的邮箱维度限制。
+// 复用与 SendCode 相同的 Incr + 首次设置过期模式；Redis 异常时放行，
+// 避免限流组件故障拖垮登录（与 RateLimit 中间件行为一致）。
+func (s *AuthService) checkLoginEmailLimit(ctx context.Context, email string) error {
+	key := fmt.Sprintf("login:limit:email:%s", strings.ToLower(email))
+	count, err := s.redis.Incr(ctx, key).Result()
+	if err != nil {
+		return nil
+	}
+	if count == 1 {
+		_ = s.redis.Expire(ctx, key, time.Minute).Err()
+	}
+	if count > 5 {
+		return apperrors.New(apperrors.CodeTooManyRequests, "登录尝试过于频繁，请稍后再试")
+	}
+	return nil
 }
 
 // verifyCode 校验邮箱验证码（从 Redis 取，比对，不匹配返回业务错误）

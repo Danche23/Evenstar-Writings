@@ -53,6 +53,9 @@ func NewOSSStorage(cfg *config.OSSConfig) (Storage, error) {
 }
 
 // Save 上传对象到 OSS（content-type 按扩展名自动推断），返回公网可访问 url
+// 对象不强制设置 ACL，继承 bucket 权限。匿名可访问的前提是 bucket 权限为「公共读」，
+// 或（关闭账号/桶级「阻止公共访问」后）为对象单独设置 public-read ACL。
+// 说明：若在「阻止公共访问」开启时强加对象 public-read，上传会被 OSS 拒绝（403），故此处不强设。
 func (o *OSSStorage) Save(objectKey string, data []byte) (string, error) {
 	opts := make([]oss.Option, 0, 1)
 	if ct := mime.TypeByExtension(filepath.Ext(objectKey)); ct != "" {
