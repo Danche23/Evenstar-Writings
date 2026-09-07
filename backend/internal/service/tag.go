@@ -29,6 +29,7 @@ func (s *TagService) List() ([]dto.Tag, error) {
 		list = append(list, dto.Tag{
 			ID:           t.ID,
 			Name:         t.Name,
+			SortOrder:    t.SortOrder,
 			ArticleCount: count,
 			CreatedAt:    t.CreatedAt,
 			UpdatedAt:    t.UpdatedAt,
@@ -44,11 +45,24 @@ func (s *TagService) Create(name string) (uint, error) {
 	} else if !errorsIsNotFound(err) {
 		return 0, apperrors.ErrInternalError
 	}
-	tag := &model.Tag{Name: name}
+	// 新标签默认排到末尾（当前数量 + 1）
+	existing, _ := s.tagRepo.ListAll()
+	tag := &model.Tag{Name: name, SortOrder: len(existing) + 1}
 	if err := s.tagRepo.Create(tag); err != nil {
 		return 0, apperrors.ErrInternalError
 	}
 	return tag.ID, nil
+}
+
+// Reorder 按有序 id 数组重排前台展示顺序
+func (s *TagService) Reorder(ids []uint) error {
+	if len(ids) == 0 {
+		return apperrors.ErrInvalidParam
+	}
+	if err := s.tagRepo.Reorder(ids); err != nil {
+		return apperrors.ErrInternalError
+	}
+	return nil
 }
 
 // Update 编辑标签（重名返回业务错误）

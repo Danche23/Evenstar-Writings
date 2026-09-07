@@ -42,3 +42,19 @@ func (s *StatsService) Stats() (*dto.Stats, error) {
 		TotalViews:   totalViews,
 	}, nil
 }
+
+// Public 公开统计（页脚：已发布文章 / 有效评论 / 总浏览量）
+func (s *StatsService) Public() (*dto.PublicStats, error) {
+	var articles, comments, views int64
+	if err := s.db.Model(&model.Article{}).Where("status = 2").Count(&articles).Error; err != nil {
+		return nil, apperrors.ErrInternalError
+	}
+	if err := s.db.Model(&model.Comment{}).Count(&comments).Error; err != nil {
+		return nil, apperrors.ErrInternalError
+	}
+	if err := s.db.Model(&model.Article{}).Where("status = 2").
+		Select("COALESCE(SUM(views), 0)").Scan(&views).Error; err != nil {
+		return nil, apperrors.ErrInternalError
+	}
+	return &dto.PublicStats{Articles: articles, Comments: comments, Views: views}, nil
+}

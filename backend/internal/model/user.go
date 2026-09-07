@@ -8,6 +8,7 @@ type User struct {
 	Nickname     string `gorm:"column:nickname;size:50" json:"nickname"`    // 可空，空则后端生成默认昵称
 	Email        string `gorm:"column:email;uniqueIndex;size:100;not null" json:"email"`
 	Avatar       string `gorm:"column:avatar;size:255" json:"avatar"`             // 可空，空则前端默认头像
+	Bio          string `gorm:"column:bio;size:500" json:"bio"`                   // 可空，博主简介
 	Role         int8   `gorm:"column:role;not null;default:2" json:"role"`       // 1=管理员 2=普通用户
 	Status       int8   `gorm:"column:status;not null;default:1" json:"status"`   // 1=正常 2=禁用
 	TokenVersion uint   `gorm:"column:token_version;not null;default:0" json:"-"` // 改密/重置/禁用/删除时+1

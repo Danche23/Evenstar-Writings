@@ -1,12 +1,16 @@
 <template>
   <div>
     <div class="admin-page-head flex-between">
-      <h2>标签管理</h2>
-      <button class="btn btn-primary btn-sm" @click="openDialog()">＋ 新建标签</button>
+      <h2>标签列表</h2>
+      <div class="head-actions">
+        <router-link to="/admin/tags/sort" class="btn btn-outline btn-sm">↕ 排序布局</router-link>
+        <button class="btn btn-primary btn-sm" @click="openDialog()">＋ 新建标签</button>
+      </div>
     </div>
 
     <div class="admin-card">
       <el-table :data="list" v-loading="loading" style="width: 100%">
+        <el-table-column type="index" label="排名" width="80" :index="rankIndex" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="名称" min-width="160" />
         <el-table-column prop="article_count" label="文章数" width="100" />
@@ -33,7 +37,7 @@
       </el-form>
       <template #footer>
         <button class="btn btn-ghost" @click="dialogVisible = false">取消</button>
-        <button class="btn btn-primary" :disabled="saving" @click="submit">{{ saving ? '保存中…' : '保存' }}</button>
+        <button class="btn btn-primary" :disabled="savingDlg" @click="submit">{{ savingDlg ? '保存中…' : '保存' }}</button>
       </template>
     </el-dialog>
   </div>
@@ -50,7 +54,10 @@ const loading = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const name = ref('')
-const saving = ref(false)
+const savingDlg = ref(false)
+
+// 排名 = 列表序号（列表已按 sort_order 升序返回，即前台展示顺序）
+function rankIndex(i) { return i + 1 }
 
 async function load() {
   loading.value = true
@@ -72,7 +79,7 @@ async function submit() {
     ElMessage.warning('请输入标签名称')
     return
   }
-  saving.value = true
+  savingDlg.value = true
   try {
     if (editingId.value) await adminUpdateTag(editingId.value, name.value.trim())
     else await adminCreateTag(name.value.trim())
@@ -80,7 +87,7 @@ async function submit() {
     dialogVisible.value = false
     load()
   } catch (e) { /* 拦截器提示 */ } finally {
-    saving.value = false
+    savingDlg.value = false
   }
 }
 
@@ -96,6 +103,7 @@ onMounted(load)
 </script>
 
 <style scoped>
+.head-actions { display: flex; align-items: center; gap: 12px; }
 .op-link { color: var(--primary); font-size: 13px; margin-right: 12px; cursor: pointer; }
 .op-link.danger { color: var(--danger); }
 </style>

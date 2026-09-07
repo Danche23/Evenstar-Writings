@@ -1,5 +1,7 @@
 <template>
   <div class="editor-page">
+    <router-link to="/admin/articles" class="back-link">← 返回文章列表</router-link>
+
     <div class="admin-page-head flex-between">
       <h2>{{ isEdit ? '编辑文章' : '写文章' }}</h2>
       <div class="status-switch">
@@ -203,7 +205,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.editor-page { max-width: 1000px; }
+.editor-page { max-width: 920px; margin: 0 auto; }
 .form-card { padding: 22px 24px; }
 .multi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .cover-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

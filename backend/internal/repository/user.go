@@ -76,3 +76,15 @@ func (r *UserRepository) List(page, size int, keyword string) ([]model.User, int
 func (r *UserRepository) Delete(id uint) error {
 	return r.db.Delete(&model.User{}, id).Error
 }
+
+// GetAuthor 获取站点博主（role=1 且 status=1 的第一个用户）；无则返回 nil
+func (r *UserRepository) GetAuthor() (*model.User, error) {
+	var user model.User
+	if err := r.db.Where("role = ? AND status = ?", 1, 1).Order("id ASC").Limit(1).Find(&user).Error; err != nil {
+		return nil, err
+	}
+	if user.ID == 0 {
+		return nil, nil
+	}
+	return &user, nil
+}

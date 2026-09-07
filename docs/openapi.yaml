@@ -310,6 +310,31 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/user/author:
+    get:
+      tags: [User]
+      summary: 前台获取博主信息
+      description: 公开接口，无需登录。返回站点博主（role=1 且 status=1 的第一个用户）的昵称、头像、简介。
+      operationId: getAuthor
+      responses:
+        "200":
+          description: 博主信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ResponseMeta"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          nickname: { type: string }
+                          avatar: { type: string }
+                          bio: { type: string }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   # ==================== 后台用户管理 ====================
   /api/admin/users:
     get:
@@ -361,6 +386,38 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/SuccessNoData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [User]
+      summary: 编辑用户资料（nickname / bio）
+      description: |
+        AdminOnly。仅更新 nickname / bio，不能改密码、角色、状态。
+      operationId: adminUpdateUser
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname: { type: string, maxLength: 50 }
+                bio: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -787,6 +844,74 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/admin/categories/reorder:
+    put:
+      tags: [Category]
+      summary: 重排分类前台展示顺序
+      description: |
+        AdminOnly。传入有序的 id 数组，后端按数组下标（1 起）依次写入 `sort_order`。
+        前台 `/api/categories` 按 `sort_order` 升序返回，从而同步更新前台展示位置。
+      operationId: adminReorderCategories
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items: { type: integer }
+                  description: 期望的展示顺序（从前往后）
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/tags/reorder:
+    put:
+      tags: [Tag]
+      summary: 重排标签前台展示顺序
+      description: |
+        AdminOnly。传入有序的 id 数组，后端按数组下标（1 起）依次写入 `sort_order`。
+        前台 `/api/tags` 按 `sort_order` 升序返回，从而同步更新前台展示位置。
+      operationId: adminReorderTags
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items: { type: integer }
+                  description: 期望的展示顺序（从前往后）
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessNoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   # ==================== 标签 ====================
   /api/tags:
     get:
@@ -999,7 +1124,7 @@ paths:
     get:
       tags: [Comment]
       summary: 评论列表（后台，分页）
-      description: AdminOnly。分页返回评论，可按 article_id 筛选。
+      description: AdminOnly。分页返回评论，可按文章标题（keyword）或评论用户（user）模糊检索，也可按 article_id 精确筛选。
       operationId: adminListComments
       security: [{ BearerAuth: [] }]
       x-admin-only: true
@@ -1009,7 +1134,15 @@ paths:
         - name: article_id
           in: query
           schema: { type: integer }
-          description: 按文章筛选（可选）
+          description: 按文章 ID 精确筛选（可选）
+        - name: keyword
+          in: query
+          schema: { type: string }
+          description: 按文章标题模糊检索（可选）
+        - name: user
+          in: query
+          schema: { type: string }
+          description: 按评论用户昵称/邮箱模糊检索（可选）
       responses:
         "200":
           description: 分页评论列表

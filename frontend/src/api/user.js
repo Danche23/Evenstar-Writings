@@ -30,3 +30,14 @@ export function adminUpdateUserStatus(id, status) {
   // status: 1=正常 2=禁用
   return request.put(`/api/admin/users/${id}/status`, { status })
 }
+
+// 前台获取博主信息（公开，无需登录）
+export function getAuthor() {
+  return request.get('/api/user/author')
+}
+
+// 后台编辑用户资料（nickname/bio）
+export function adminUpdateUser(id, data) {
+  // { nickname?, bio? }
+  return request.put(`/api/admin/users/${id}`, data)
+}

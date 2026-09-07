@@ -1,10 +1,12 @@
 package api
 
 import (
+	"github.com/Danche23/Evenstar-Writings/internal/api/about"
 	"github.com/Danche23/Evenstar-Writings/internal/api/article"
 	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
 	"github.com/Danche23/Evenstar-Writings/internal/api/category"
 	"github.com/Danche23/Evenstar-Writings/internal/api/comment"
+	"github.com/Danche23/Evenstar-Writings/internal/api/message"
 	"github.com/Danche23/Evenstar-Writings/internal/api/stats"
 	"github.com/Danche23/Evenstar-Writings/internal/api/tag"
 	"github.com/Danche23/Evenstar-Writings/internal/api/upload"
@@ -24,11 +26,13 @@ type Router struct {
 	commentHandler  *comment.CommentHandler
 	uploadHandler   *upload.UploadHandler
 	statsHandler    *stats.StatsHandler
+	messageHandler  *message.MessageHandler
+	aboutHandler    *about.AboutHandler
 }
 
 // NewRouter 创建路由
-func NewRouter(authHandler *auth.AuthHandler, userHandler *user.UserHandler, articleHandler *article.ArticleHandler, categoryHandler *category.CategoryHandler, tagHandler *tag.TagHandler, commentHandler *comment.CommentHandler, uploadHandler *upload.UploadHandler, statsHandler *stats.StatsHandler) *Router {
-	return &Router{authHandler: authHandler, userHandler: userHandler, articleHandler: articleHandler, categoryHandler: categoryHandler, tagHandler: tagHandler, commentHandler: commentHandler, uploadHandler: uploadHandler, statsHandler: statsHandler}
+func NewRouter(authHandler *auth.AuthHandler, userHandler *user.UserHandler, articleHandler *article.ArticleHandler, categoryHandler *category.CategoryHandler, tagHandler *tag.TagHandler, commentHandler *comment.CommentHandler, uploadHandler *upload.UploadHandler, statsHandler *stats.StatsHandler, messageHandler *message.MessageHandler, aboutHandler *about.AboutHandler) *Router {
+	return &Router{authHandler: authHandler, userHandler: userHandler, articleHandler: articleHandler, categoryHandler: categoryHandler, tagHandler: tagHandler, commentHandler: commentHandler, uploadHandler: uploadHandler, statsHandler: statsHandler, messageHandler: messageHandler, aboutHandler: aboutHandler}
 }
 
 // Setup 设置路由（总入口）
@@ -60,6 +64,8 @@ func (r *Router) Setup(engine *gin.Engine) {
 		comment.RegisterRoutes(apiGroup, r.commentHandler)
 		upload.RegisterRoutes(apiGroup, r.uploadHandler)
 		stats.RegisterRoutes(apiGroup, r.statsHandler)
+		message.RegisterRoutes(apiGroup, r.messageHandler)
+		about.RegisterRoutes(apiGroup, r.aboutHandler)
 	}
 }
 

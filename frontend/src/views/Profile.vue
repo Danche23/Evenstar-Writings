@@ -1,5 +1,8 @@
 <template>
   <div class="profile-wrap" v-if="user">
+    <!-- 返回首页 -->
+    <router-link to="/" class="back-link">← 返回首页</router-link>
+
     <!-- 头部信息 -->
     <div class="card profile-head">
       <el-avatar :size="80" :src="avatarUrl || undefined" class="profile-avatar">
@@ -152,7 +155,7 @@ async function savePassword() {
 <style scoped>
 .profile-wrap { max-width: 720px; margin: 40px auto; padding: 0 20px; }
 .profile-head { display: flex; align-items: center; gap: 22px; padding: 24px 26px; margin-bottom: 20px; }
-.profile-avatar { background: linear-gradient(135deg, var(--primary-100), #c7d2fe); color: var(--primary-700); font-size: 30px; font-weight: 700; }
+.profile-avatar { background: linear-gradient(135deg, var(--primary-100), #d8cdb2); color: var(--primary-700); font-size: 30px; font-weight: 700; }
 .info h2 { font-size: 20px; font-weight: 700; }
 .info .email { font-size: 13px; color: var(--text-muted); }
 .profile-section { padding: 22px 26px; margin-bottom: 20px; }
