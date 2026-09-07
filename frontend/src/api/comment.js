@@ -16,7 +16,7 @@ export function deleteComment(id) {
 
 // —— 后台（AdminOnly）——
 export function adminListComments(params) {
-  // { page, page_size, article_id? }
+  // { page, page_size, article_id?, keyword?, user? }
   return request.get('/api/admin/comments', { params })
 }
 

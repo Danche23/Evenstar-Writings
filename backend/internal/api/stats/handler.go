@@ -17,6 +17,16 @@ func NewStatsHandler(statsService *service.StatsService) *StatsHandler {
 	return &StatsHandler{statsService: statsService}
 }
 
+// Public 公开统计
+func (h *StatsHandler) Public(c *gin.Context) {
+	resp, err := h.statsService.Public()
+	if err != nil {
+		response.BizError(c, err)
+		return
+	}
+	response.Success(c, resp)
+}
+
 // Stats 后台统计
 func (h *StatsHandler) Stats(c *gin.Context) {
 	resp, err := h.statsService.Stats()

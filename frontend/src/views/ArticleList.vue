@@ -1,20 +1,20 @@
 <template>
   <div class="page-container page-block">
-    <div class="page-title-bar flex-between">
-      <div>
+    <header class="list-head">
+      <div class="list-title">
         <h1>{{ title }}</h1>
-        <div class="sub">{{ total > 0 ? `共 ${total} 篇` : ' ' }}</div>
+        <div class="sub">{{ total > 0 ? `共 ${total} 篇文章` : ' ' }}</div>
       </div>
       <!-- 筛选：分类 + 关键词 -->
-      <div class="search-row">
-        <el-select v-model="query.category_id" placeholder="全部分类" clearable style="width: 150px" @change="onFilter">
+      <div class="list-toolbar">
+        <el-select v-model="query.category_id" placeholder="全部分类" clearable style="width: 140px" @change="onFilter">
           <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索标题 / 摘要…" clearable style="width: 220px"
+        <el-input v-model="keyword" placeholder="搜索标题 / 摘要…" clearable style="width: 200px"
           @keyup.enter="onSearch" @clear="onSearch" />
         <button class="btn btn-primary" @click="onSearch">搜索</button>
       </div>
-    </div>
+    </header>
 
     <div v-if="loading" class="loading-box">加载中…</div>
     <div v-else-if="!list.length" class="empty">
@@ -114,5 +114,16 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.pager { display: flex; justify-content: center; margin: 22px 0 8px; }
+.list-head {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  margin: 10px 0 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.list-title h1 { font-size: 30px; font-weight: 700; color: #2c261d; }
+.list-title .sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.list-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 10px 12px; border-radius: 12px; box-shadow: var(--shadow-sm);
+}
+.pager { display: flex; justify-content: center; margin: 26px 0 8px; }
 </style>

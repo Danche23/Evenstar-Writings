@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   nickname      VARCHAR(50)  NULL COMMENT '可空，空则后端生成默认昵称',
   email         VARCHAR(100) NOT NULL,
   avatar        VARCHAR(255) NULL COMMENT '可空，空则前端默认头像',
+  bio           VARCHAR(500) NULL COMMENT '博主简介',
   role          TINYINT      NOT NULL DEFAULT 2 COMMENT '1=管理员 2=普通用户',
   status        TINYINT      NOT NULL DEFAULT 1 COMMENT '1=正常 2=禁用',
   token_version INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '改密/重置/禁用/删除时+1，JWT 失效机制',
@@ -67,6 +68,7 @@ CREATE TABLE IF NOT EXISTS articles (
 CREATE TABLE IF NOT EXISTS categories (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name       VARCHAR(50) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0 COMMENT '前台展示排序，越小越靠前',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -76,6 +78,7 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE TABLE IF NOT EXISTS tags (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name       VARCHAR(50) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0 COMMENT '前台展示排序，越小越靠前',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -153,4 +156,34 @@ CREATE TABLE IF NOT EXISTS uploads (
   KEY idx_scene (scene),
   CONSTRAINT fk_uploads_user FOREIGN KEY (user_id)
     REFERENCES users (id) ON DELETE NO ACTION ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------
+-- 留言板（需登录留言，软删除）
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS messages (
+  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    BIGINT UNSIGNED NULL,
+  content    VARCHAR(400) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME NULL,
+  PRIMARY KEY (id),
+  KEY idx_user (user_id),
+  KEY idx_deleted (deleted_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------
+-- 站点设置 KV（前台「关于」页等可管理内容）
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS site_settings (
+  id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  setting_key   VARCHAR(64) NOT NULL,
+  setting_value TEXT,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_key (setting_key)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

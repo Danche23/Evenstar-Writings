@@ -11,6 +11,9 @@ const routes = [
       { path: 'articles/:id', name: 'article', component: () => import('@/views/ArticleDetail.vue') },
       { path: 'categories', name: 'categories', component: () => import('@/views/Categories.vue') },
       { path: 'tags', name: 'tags', component: () => import('@/views/Tags.vue') },
+      { path: 'about', name: 'about', component: () => import('@/views/About.vue') },
+      { path: 'archive', name: 'archive', component: () => import('@/views/Archive.vue') },
+      { path: 'guestbook', name: 'guestbook', component: () => import('@/views/Guestbook.vue') },
       { path: 'login', name: 'login', component: () => import('@/views/Login.vue') },
       { path: 'register', name: 'register', component: () => import('@/views/Register.vue') },
       { path: 'forgot', name: 'forgot', component: () => import('@/views/ForgotPassword.vue') },
@@ -27,10 +30,13 @@ const routes = [
       { path: 'articles/new', name: 'article-new', component: () => import('@/views/admin/ArticleEdit.vue') },
       { path: 'articles/:id/edit', name: 'article-edit', component: () => import('@/views/admin/ArticleEdit.vue') },
       { path: 'categories', name: 'admin-categories', component: () => import('@/views/admin/AdminCategories.vue') },
+      { path: 'categories/sort', name: 'admin-category-sort', component: () => import('@/views/admin/AdminCategorySort.vue') },
       { path: 'tags', name: 'admin-tags', component: () => import('@/views/admin/AdminTags.vue') },
+      { path: 'tags/sort', name: 'admin-tag-sort', component: () => import('@/views/admin/AdminTagSort.vue') },
       { path: 'comments', name: 'admin-comments', component: () => import('@/views/admin/AdminComments.vue') },
       { path: 'users', name: 'admin-users', component: () => import('@/views/admin/AdminUsers.vue') },
-      { path: 'uploads', name: 'admin-uploads', component: () => import('@/views/admin/AdminUploads.vue') }
+      { path: 'uploads', name: 'admin-uploads', component: () => import('@/views/admin/AdminUploads.vue') },
+      { path: 'about', name: 'admin-about', component: () => import('@/views/admin/AdminAbout.vue') }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' }

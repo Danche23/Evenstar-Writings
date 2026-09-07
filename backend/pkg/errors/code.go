@@ -21,17 +21,17 @@ const (
 	CodeServiceUnavailable = 503
 
 	// 业务错误 1xxx
-	CodeUserNotFound        = 1001
-	CodeUserAlreadyExists   = 1002
-	CodeInvalidCredentials  = 1003
-	CodeUserDisabled        = 1004
-	CodeInvalidToken        = 1005
-	CodeTokenExpired        = 1006
-	CodeCaptchaRequired     = 1007
-	CodeCaptchaVerifyFailed = 1008
-	CodeVerifyCodeError     = 1009 // 验证码错误或已过期
-	CodeOldPasswordError    = 1010 // 旧密码错误
-	CodeCannotOperateSelf   = 1011 // 不能对自己执行此操作
+	CodeUserNotFound         = 1001
+	CodeUserAlreadyExists    = 1002
+	CodeInvalidCredentials   = 1003
+	CodeUserDisabled         = 1004
+	CodeInvalidToken         = 1005
+	CodeTokenExpired         = 1006
+	CodeCaptchaRequired      = 1007
+	CodeCaptchaVerifyFailed  = 1008
+	CodeVerifyCodeError      = 1009 // 验证码错误或已过期
+	CodeOldPasswordError     = 1010 // 旧密码错误
+	CodeCannotOperateSelf    = 1011 // 不能对自己执行此操作
 	CodeCommentTopNotAllowed = 1012 // 仅一级评论可置顶
 
 	// 参数错误 2xxx
@@ -62,7 +62,7 @@ var codeMessages = map[int]string{
 	CodeUserNotFound:          "用户不存在",
 	CodeUserAlreadyExists:     "用户已存在",
 	CodeInvalidCredentials:    "用户名或密码错误",
-	CodeUserDisabled:          "用户已被禁用",
+	CodeUserDisabled:          "账号已被禁用",
 	CodeInvalidToken:          "无效的令牌",
 	CodeTokenExpired:          "令牌已过期",
 	CodeCaptchaRequired:       "需要完成滑块验证",

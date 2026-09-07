@@ -31,6 +31,7 @@ func (s *CategoryService) List() ([]dto.Category, error) {
 		list = append(list, dto.Category{
 			ID:           c.ID,
 			Name:         c.Name,
+			SortOrder:    c.SortOrder,
 			ArticleCount: count,
 			CreatedAt:    c.CreatedAt,
 			UpdatedAt:    c.UpdatedAt,
@@ -46,11 +47,24 @@ func (s *CategoryService) Create(name string) (uint, error) {
 	} else if !errorsIsNotFound(err) {
 		return 0, apperrors.ErrInternalError
 	}
-	category := &model.Category{Name: name}
+	// 新分类默认排到末尾（当前数量 + 1）
+	existing, _ := s.categoryRepo.ListAll()
+	category := &model.Category{Name: name, SortOrder: len(existing) + 1}
 	if err := s.categoryRepo.Create(category); err != nil {
 		return 0, apperrors.ErrInternalError
 	}
 	return category.ID, nil
+}
+
+// Reorder 按有序 id 数组重排前台展示顺序
+func (s *CategoryService) Reorder(ids []uint) error {
+	if len(ids) == 0 {
+		return apperrors.ErrInvalidParam
+	}
+	if err := s.categoryRepo.Reorder(ids); err != nil {
+		return apperrors.ErrInternalError
+	}
+	return nil
 }
 
 // Update 编辑分类（重名返回业务错误）

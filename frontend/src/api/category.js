@@ -15,3 +15,8 @@ export function adminUpdateCategory(id, name) {
 export function adminDeleteCategory(id) {
   return request.delete(`/api/admin/categories/${id}`)
 }
+
+// 后台拖拽排序：传入有序 id 数组
+export function adminReorderCategories(ids) {
+  return request.put('/api/admin/categories/reorder', { ids })
+}

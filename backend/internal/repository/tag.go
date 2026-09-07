@@ -15,13 +15,25 @@ func NewTagRepository(db *gorm.DB) *TagRepository {
 	return &TagRepository{db: db}
 }
 
-// ListAll 全量列表（按 id 升序）
+// ListAll 全量列表（按 sort_order 升序，其次 id 升序）
 func (r *TagRepository) ListAll() ([]model.Tag, error) {
 	var tags []model.Tag
-	if err := r.db.Order("id ASC").Find(&tags).Error; err != nil {
+	if err := r.db.Order("sort_order ASC, id ASC").Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
+}
+
+// Reorder 按传入的有序 id 数组重排 sort_order（事务内逐个更新）
+func (r *TagRepository) Reorder(ids []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for i, id := range ids {
+			if err := tx.Model(&model.Tag{}).Where("id = ?", id).Update("sort_order", i+1).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // FindByID 按 ID 查标签

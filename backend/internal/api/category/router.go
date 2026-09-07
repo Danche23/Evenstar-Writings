@@ -18,5 +18,6 @@ func RegisterRoutes(group *gin.RouterGroup, h *CategoryHandler) {
 		admin.POST("/categories", h.AdminCreate)
 		admin.PUT("/categories/:id", h.AdminUpdate)
 		admin.DELETE("/categories/:id", h.AdminDelete)
+		admin.PUT("/categories/reorder", h.AdminReorder)
 	}
 }

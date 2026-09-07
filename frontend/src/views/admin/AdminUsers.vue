@@ -49,6 +49,7 @@
               <span class="faint small">（自己）</span>
             </template>
             <template v-else>
+              <span class="op-link" @click="openEdit(row)">编辑</span>
               <el-popconfirm
                 :title="row.status === 1 ? '禁用后该用户将无法登录，确定？' : '确定解禁该用户？'"
                 width="230"
@@ -76,13 +77,28 @@
         @current-change="(p) => { query.page = p; load() }"
       />
     </div>
+
+    <el-dialog v-model="editVisible" title="编辑用户资料" width="420px">
+      <el-form label-width="56px">
+        <el-form-item label="昵称">
+          <el-input v-model="editForm.nickname" maxlength="50" placeholder="展示昵称" />
+        </el-form-item>
+        <el-form-item label="简介">
+          <el-input v-model="editForm.bio" type="textarea" :rows="3" maxlength="500" placeholder="博主简介，将展示在前台关于卡片" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" :disabled="editSaving" @click="saveEdit">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { adminListUsers, adminUpdateUserStatus, adminDeleteUser } from '@/api/user'
+import { adminListUsers, adminUpdateUserStatus, adminDeleteUser, adminUpdateUser } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 import { formatDateTime } from '@/utils/format'
 
@@ -125,6 +141,32 @@ async function remove(row) {
     ElMessage.success('已删除')
     load()
   } catch (e) { /* 拦截器提示 */ }
+}
+
+const editVisible = ref(false)
+const editSaving = ref(false)
+const editForm = reactive({ id: null, nickname: '', bio: '' })
+
+function openEdit(row) {
+  editForm.id = row.id
+  editForm.nickname = row.nickname || ''
+  editForm.bio = row.bio || ''
+  editVisible.value = true
+}
+
+async function saveEdit() {
+  editSaving.value = true
+  try {
+    await adminUpdateUser(editForm.id, {
+      nickname: editForm.nickname || null,
+      bio: editForm.bio || null
+    })
+    ElMessage.success('已保存')
+    editVisible.value = false
+    load()
+  } catch (e) { /* 拦截器提示 */ } finally {
+    editSaving.value = false
+  }
 }
 
 onMounted(load)

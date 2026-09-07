@@ -6,7 +6,7 @@
 
       <el-form label-position="top" @submit.prevent>
         <el-form-item label="用户名">
-          <el-input v-model="form.username" placeholder="用于展示的用户名" size="large" />
+          <el-input v-model="form.username" placeholder="用户名（账号唯一标识，必填）" size="large" />
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="form.email" placeholder="you@example.com" size="large" />
@@ -23,7 +23,7 @@
           <el-input v-model="form.password" type="password" show-password placeholder="8 位以上，含字母和数字" size="large" />
         </el-form-item>
         <el-form-item label="昵称（选填）">
-          <el-input v-model="form.nickname" placeholder="不填将自动生成默认昵称" size="large" />
+          <el-input v-model="form.nickname" placeholder="昵称（评论/文章中展示；不填则显示用户名）" size="large" />
         </el-form-item>
       </el-form>
 
