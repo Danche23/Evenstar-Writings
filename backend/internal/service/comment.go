@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
@@ -29,6 +30,7 @@ func NewCommentService(commentRepo *repository.CommentRepository, userRepo *repo
 // ListComments 两级评论树（一级分页，二级全量带出）
 // total = 未删除一级数（分页用）；count = 未删除一级+二级总数（展示用）
 func (s *CommentService) ListComments(articleID uint, page, size int) (*dto.CommentListResponse, error) {
+	page, size = utils.ClampPage(page, size, 10, 50)
 	topLevel, total, err := s.commentRepo.ListTopLevel(articleID, page, size)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
@@ -114,16 +116,16 @@ func (s *CommentService) DeleteComment(userID, commentID uint, isAdmin bool) err
 	if !isAdmin && (comment.UserID == nil || *comment.UserID != userID) {
 		return apperrors.ErrForbidden
 	}
+	// 一级评论：事务内连带删除其下全部二级回复，保证数据一致
 	if comment.ParentID == nil {
-		if err := s.commentRepo.DeleteByParent(comment.ID); err != nil {
-			return apperrors.ErrInternalError
-		}
+		return s.commentRepo.DeleteWithReplies(comment.ID)
 	}
 	return s.commentRepo.Delete(commentID)
 }
 
 // AdminListComments 后台评论列表
 func (s *CommentService) AdminListComments(page, size int, articleID uint, keyword, userKeyword string) (*dto.PageData[dto.AdminComment], error) {
+	page, size = utils.ClampPage(page, size, 20, 100)
 	comments, total, err := s.commentRepo.AdminList(page, size, articleID, keyword, userKeyword)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
@@ -161,10 +163,9 @@ func (s *CommentService) AdminDeleteComment(commentID uint) error {
 	if err != nil {
 		return apperrors.ErrResourceNotFound
 	}
+	// 一级评论：事务内连带删除其下全部二级回复，保证数据一致
 	if comment.ParentID == nil {
-		if err := s.commentRepo.DeleteByParent(comment.ID); err != nil {
-			return apperrors.ErrInternalError
-		}
+		return s.commentRepo.DeleteWithReplies(comment.ID)
 	}
 	return s.commentRepo.Delete(commentID)
 }

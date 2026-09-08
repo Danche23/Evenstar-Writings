@@ -4,6 +4,7 @@ import (
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
 	"github.com/Danche23/Evenstar-Writings/internal/repository"
 	apperrors "github.com/Danche23/Evenstar-Writings/pkg/errors"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -75,6 +76,7 @@ func (s *UserService) UpdatePassword(userID uint, req dto.UpdatePasswordRequest)
 
 // List 后台分页查询用户
 func (s *UserService) List(page, size int, keyword string) (*dto.PageData[dto.UserResponse], error) {
+	page, size = utils.ClampPage(page, size, 10, 100)
 	users, total, err := s.userRepo.List(page, size, keyword)
 	if err != nil {
 		return nil, apperrors.ErrInternalError

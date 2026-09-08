@@ -45,6 +45,18 @@ func (r *CategoryRepository) FindByID(id uint) (*model.Category, error) {
 	return &category, nil
 }
 
+// FindByIDs 批量按 ID 查分类（避免逐条查库造成 N+1）
+func (r *CategoryRepository) FindByIDs(ids []uint) ([]model.Category, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var categories []model.Category
+	if err := r.db.Where("id IN ?", ids).Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
 // FindByName 按名称查分类（重名校验）
 func (r *CategoryRepository) FindByName(name string) (*model.Category, error) {
 	var category model.Category

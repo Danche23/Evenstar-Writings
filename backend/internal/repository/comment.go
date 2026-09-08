@@ -115,3 +115,13 @@ func (r *CommentRepository) AdminList(page, size int, articleID uint, keyword, u
 	}
 	return comments, total, nil
 }
+
+// DeleteWithReplies 事务内删除一级评论及其全部二级回复（保证数据一致）
+func (r *CommentRepository) DeleteWithReplies(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("parent_id = ?", id).Delete(&model.Comment{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.Comment{}, id).Error
+	})
+}

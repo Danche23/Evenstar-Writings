@@ -59,9 +59,17 @@ func (a *App) Initialize(configPath string) error {
 		return fmt.Errorf("JWT 密钥未配置：请在 config.yaml 或环境变量中设置 jwt.secret")
 	}
 
+	// 1.6 邮件配置校验：关闭 mock 后必须配齐 SMTP，否则注册 / 找回密码在生产不可用（P0 快速失败）
+	if !a.cfg.Mail.Mock && (a.cfg.Mail.Host == "" || a.cfg.Mail.Username == "" || a.cfg.Mail.FromAddr == "") {
+		return fmt.Errorf("邮件未配置完整：mail.mock=false 时必须设置 mail.host / mail.username / mail.from_addr（密码请用环境变量 MAIL_PASSWORD）")
+	}
+
 	// 2. 初始化日志
 	if err := a.initLogger(); err != nil {
 		return err
+	}
+	if a.cfg.Mail.Mock {
+		logger.Warn("mail.mock=true：不会真正发送邮件，验证码仅打印到日志（生产环境请设为 false）")
 	}
 
 	// 3. 初始化数据库

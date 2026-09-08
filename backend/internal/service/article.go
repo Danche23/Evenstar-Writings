@@ -9,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Danche23/Evenstar-Writings/pkg/logger"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
+	"go.uber.org/zap"
+
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
 	"github.com/Danche23/Evenstar-Writings/internal/model"
 	"github.com/Danche23/Evenstar-Writings/internal/repository"
@@ -33,13 +37,15 @@ func NewArticleService(articleRepo *repository.ArticleRepository, userRepo *repo
 
 // ListArticles 前台文章列表（仅已发布）
 func (s *ArticleService) ListArticles(page, size int, categoryID, tagID uint, keyword string) (*dto.PageData[dto.ArticleListItem], error) {
+	page, size = utils.ClampPage(page, size, 10, 50)
 	articles, total, err := s.articleRepo.ListPublished(page, size, categoryID, tagID, keyword)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
 	}
+	catMap, tagMap, authorMap := s.relationsOf(articles)
 	list := make([]dto.ArticleListItem, 0, len(articles))
 	for i := range articles {
-		list = append(list, s.toListItem(&articles[i]))
+		list = append(list, s.toListItem(&articles[i], catMap, tagMap, authorMap))
 	}
 	return dto.NewPageData(list, total, page, size), nil
 }
@@ -53,7 +59,7 @@ func (s *ArticleService) GetArticle(id uint) (*dto.ArticleDetail, error) {
 	if article.Status != 2 {
 		return nil, apperrors.ErrResourceNotFound
 	}
-	detail := s.toDetail(article)
+	detail := s.detailOf(article)
 	return &detail, nil
 }
 
@@ -84,13 +90,18 @@ func (s *ArticleService) HotArticles(limit int) ([]dto.ArticleListItem, error) {
 	}
 
 	// 按 ZSET 分数顺序组装，过滤未发布/已删除
-	list := make([]dto.ArticleListItem, 0, len(articleIDs))
+	ordered := make([]model.Article, 0, len(articleIDs))
 	for _, id := range articleIDs {
 		a, ok := m[id]
 		if !ok || a.Status != 2 {
 			continue
 		}
-		list = append(list, s.toListItem(&a))
+		ordered = append(ordered, a)
+	}
+	catMap, tagMap, authorMap := s.relationsOf(ordered)
+	list := make([]dto.ArticleListItem, 0, len(ordered))
+	for i := range ordered {
+		list = append(list, s.toListItem(&ordered[i], catMap, tagMap, authorMap))
 	}
 	return list, nil
 }
@@ -135,6 +146,7 @@ func (s *ArticleService) RecordView(articleID uint, userID uint, ip, userAgent s
 
 // AdminListArticles 后台文章列表（含草稿）
 func (s *ArticleService) AdminListArticles(page, size int, status int8, keyword string) (*dto.PageData[dto.AdminArticleListItem], error) {
+	page, size = utils.ClampPage(page, size, 10, 100)
 	articles, total, err := s.articleRepo.List(page, size, status, keyword)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
@@ -167,7 +179,7 @@ func (s *ArticleService) AdminGetArticle(id uint) (*dto.AdminArticleDetail, erro
 	categoryIDs, _ := s.articleRepo.GetCategoryIDs(id)
 	tagIDs, _ := s.articleRepo.GetTagIDs(id)
 	return &dto.AdminArticleDetail{
-		ArticleDetail: s.toDetail(article),
+		ArticleDetail: s.detailOf(article),
 		Status:        article.Status,
 		CategoryIDs:   categoryIDs,
 		TagIDs:        tagIDs,
@@ -251,7 +263,7 @@ func (s *ArticleService) AdminDeleteArticle(id uint) error {
 }
 
 // toListItem 组装文章列表项（含作者/分类/标签 + Redis 增量浏览量）
-func (s *ArticleService) toListItem(a *model.Article) dto.ArticleListItem {
+func (s *ArticleService) toListItem(a *model.Article, catMap map[uint][]dto.CategoryBrief, tagMap map[uint][]dto.TagBrief, authorMap map[uint]dto.CommentUser) dto.ArticleListItem {
 	return dto.ArticleListItem{
 		ID:          a.ID,
 		AuthorID:    a.AuthorID,
@@ -262,14 +274,14 @@ func (s *ArticleService) toListItem(a *model.Article) dto.ArticleListItem {
 		PublishedAt: a.PublishedAt,
 		CreatedAt:   a.CreatedAt,
 		UpdatedAt:   a.UpdatedAt,
-		Author:      s.getAuthor(a.AuthorID),
-		Categories:  s.getCategories(a.ID),
-		Tags:        s.getTags(a.ID),
+		Author:      authorMap[a.AuthorID],
+		Categories:  catMap[a.ID],
+		Tags:        tagMap[a.ID],
 	}
 }
 
 // toDetail 组装文章详情（含 content）
-func (s *ArticleService) toDetail(a *model.Article) dto.ArticleDetail {
+func (s *ArticleService) toDetail(a *model.Article, catMap map[uint][]dto.CategoryBrief, tagMap map[uint][]dto.TagBrief, authorMap map[uint]dto.CommentUser) dto.ArticleDetail {
 	return dto.ArticleDetail{
 		ID:          a.ID,
 		AuthorID:    a.AuthorID,
@@ -281,9 +293,9 @@ func (s *ArticleService) toDetail(a *model.Article) dto.ArticleDetail {
 		PublishedAt: a.PublishedAt,
 		CreatedAt:   a.CreatedAt,
 		UpdatedAt:   a.UpdatedAt,
-		Author:      s.getAuthor(a.AuthorID),
-		Categories:  s.getCategories(a.ID),
-		Tags:        s.getTags(a.ID),
+		Author:      authorMap[a.AuthorID],
+		Categories:  catMap[a.ID],
+		Tags:        tagMap[a.ID],
 	}
 }
 
@@ -328,6 +340,86 @@ func (s *ArticleService) getTags(articleID uint) []dto.TagBrief {
 	return list
 }
 
+// detailOf 单篇文章详情（内部走批量关联查询，避免逐条查库）
+func (s *ArticleService) detailOf(a *model.Article) dto.ArticleDetail {
+	catMap, tagMap, authorMap := s.relationsOf([]model.Article{*a})
+	return s.toDetail(a, catMap, tagMap, authorMap)
+}
+
+// relationsOf 批量查询多篇文章的分类 / 标签 / 作者映射：
+// 固定 4 次查询（2 次中间表 IN 查询 + 2 次主表 IN 查询 + 1 次用户 IN 查询），取代逐条 FindByID 的 N+1
+func (s *ArticleService) relationsOf(articles []model.Article) (map[uint][]dto.CategoryBrief, map[uint][]dto.TagBrief, map[uint]dto.CommentUser) {
+	catMap := make(map[uint][]dto.CategoryBrief, len(articles))
+	tagMap := make(map[uint][]dto.TagBrief, len(articles))
+	authorMap := make(map[uint]dto.CommentUser, len(articles))
+	if len(articles) == 0 {
+		return catMap, tagMap, authorMap
+	}
+
+	ids := make([]uint, 0, len(articles))
+	authorIDs := make([]uint, 0, len(articles))
+	seenAuthor := make(map[uint]struct{}, len(articles))
+	for i := range articles {
+		ids = append(ids, articles[i].ID)
+		catMap[articles[i].ID] = []dto.CategoryBrief{}
+		tagMap[articles[i].ID] = []dto.TagBrief{}
+		if _, ok := seenAuthor[articles[i].AuthorID]; !ok {
+			seenAuthor[articles[i].AuthorID] = struct{}{}
+			authorIDs = append(authorIDs, articles[i].AuthorID)
+		}
+	}
+
+	if users, err := s.userRepo.FindByIDs(authorIDs); err == nil {
+		for _, u := range users {
+			authorMap[u.ID] = dto.CommentUser{ID: u.ID, Nickname: u.Nickname, Avatar: u.Avatar}
+		}
+	}
+
+	// 分类
+	if idMap, err := s.articleRepo.CategoryIDsByArticles(ids); err == nil {
+		all := make([]uint, 0, len(idMap))
+		for _, list := range idMap {
+			all = append(all, list...)
+		}
+		if cats, err := s.categoryRepo.FindByIDs(all); err == nil {
+			nameByID := make(map[uint]string, len(cats))
+			for _, c := range cats {
+				nameByID[c.ID] = c.Name
+			}
+			for aid, list := range idMap {
+				for _, cid := range list {
+					if name, ok := nameByID[cid]; ok {
+						catMap[aid] = append(catMap[aid], dto.CategoryBrief{ID: cid, Name: name})
+					}
+				}
+			}
+		}
+	}
+
+	// 标签
+	if idMap, err := s.articleRepo.TagIDsByArticles(ids); err == nil {
+		all := make([]uint, 0, len(idMap))
+		for _, list := range idMap {
+			all = append(all, list...)
+		}
+		if tags, err := s.tagRepo.FindByIDs(all); err == nil {
+			nameByID := make(map[uint]string, len(tags))
+			for _, t := range tags {
+				nameByID[t.ID] = t.Name
+			}
+			for aid, list := range idMap {
+				for _, tid := range list {
+					if name, ok := nameByID[tid]; ok {
+						tagMap[aid] = append(tagMap[aid], dto.TagBrief{ID: tid, Name: name})
+					}
+				}
+			}
+		}
+	}
+
+	return catMap, tagMap, authorMap
+}
+
 // currentViews 计算当前浏览量 = MySQL views + Redis 未回写增量
 func (s *ArticleService) currentViews(ctx context.Context, articleID, baseViews uint) uint {
 	incr, err := s.redis.Get(ctx, fmt.Sprintf("article:view:%d", articleID)).Uint64()
@@ -346,21 +438,31 @@ func md5Hash(s string) string {
 // SyncViews 回写 Redis 浏览量增量到 MySQL（cron 每 5 分钟调用，GETDEL 原子取数）
 func (s *ArticleService) SyncViews() error {
 	ctx := context.Background()
-	keys, err := s.redis.Keys(ctx, "article:view:*").Result()
-	if err != nil {
-		return err
-	}
-	for _, key := range keys {
-		val, err := s.redis.GetDel(ctx, key).Int64()
-		if err != nil || val <= 0 {
-			continue
-		}
-		idStr := strings.TrimPrefix(key, "article:view:")
-		id, err := strconv.ParseUint(idStr, 10, 32)
+	// 用 SCAN 游标遍历，避免 KEYS 在大数据量下阻塞 Redis
+	var cursor uint64
+	for {
+		keys, next, err := s.redis.Scan(ctx, cursor, "article:view:*", 200).Result()
 		if err != nil {
-			continue
+			return err
 		}
-		_ = s.articleRepo.IncrViews(uint(id), val)
+		for _, key := range keys {
+			val, err := s.redis.GetDel(ctx, key).Int64()
+			if err != nil || val <= 0 {
+				continue
+			}
+			idStr := strings.TrimPrefix(key, "article:view:")
+			id, err := strconv.ParseUint(idStr, 10, 32)
+			if err != nil {
+				continue
+			}
+			if err := s.articleRepo.IncrViews(uint(id), val); err != nil {
+				logger.Error("浏览量回写失败", zap.String("key", key), zap.Uint64("article_id", id), zap.Int64("incr", val), zap.Error(err))
+			}
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
 	}
 	return nil
 }

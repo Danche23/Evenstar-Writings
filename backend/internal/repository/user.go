@@ -53,6 +53,18 @@ func (r *UserRepository) Update(id uint, updates map[string]interface{}) error {
 }
 
 // List 分页查询用户，keyword 按用户名/昵称/邮箱模糊搜索
+// FindByIDs 批量按 ID 查用户（避免逐条查库造成 N+1）
+func (r *UserRepository) FindByIDs(ids []uint) ([]model.User, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var users []model.User
+	if err := r.db.Where("id IN ?", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *UserRepository) List(page, size int, keyword string) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
@@ -78,6 +79,7 @@ func (s *UploadService) Upload(userID uint, isAdmin bool, scene, filename string
 
 // AdminList 后台上传文件列表
 func (s *UploadService) AdminList(page, size int, scene string) (*dto.PageData[dto.Upload], error) {
+	page, size = utils.ClampPage(page, size, 10, 100)
 	uploads, total, err := s.uploadRepo.List(page, size, scene)
 	if err != nil {
 		return nil, apperrors.ErrInternalError

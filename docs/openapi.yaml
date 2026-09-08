@@ -1352,6 +1352,161 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  # ==================== 站点公开统计 ====================
+  /api/stats:
+    get:
+      tags: [Stats]
+      summary: 公开站点统计
+      description: 页脚展示用：已发布文章数 / 有效评论数 / 总浏览量。
+      operationId: publicStats
+      responses:
+        "200":
+          description: 统计数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicStatsData"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 关于页内容 ====================
+  /api/about:
+    get:
+      tags: [About]
+      summary: 前台「关于」页内容（公开）
+      description: 读取关于页文案；后台未保存过时返回内置默认内容。
+      operationId: getAbout
+      responses:
+        "200":
+          description: 关于页内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AboutContentData"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/admin/about:
+    get:
+      tags: [About]
+      summary: 后台读取「关于」页内容
+      description: AdminOnly。与公开接口返回结构一致，供后台表单回填。
+      operationId: adminGetAbout
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      responses:
+        "200":
+          description: 关于页内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AboutContentData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [About]
+      summary: 后台保存「关于」页内容
+      description: AdminOnly。幂等写入 site_settings(key=about)，保存后前台立即生效。
+      operationId: adminSaveAbout
+      security: [{ BearerAuth: [] }]
+      x-admin-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AboutContent"
+      responses:
+        "200":
+          description: 保存成功，返回保存后的内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AboutContentData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ==================== 留言板 ====================
+  /api/messages:
+    get:
+      tags: [Message]
+      summary: 留言列表（公开）
+      description: 分页返回留言，按时间倒序，含留言者简略信息。
+      operationId: listMessages
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: 留言列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageListData"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Message]
+      summary: 发表留言（需登录）
+      description: 需登录；内容 1~400 字。
+      operationId: createMessage
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageWriteRequest"
+      responses:
+        "200":
+          description: 发表成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/messages/{id}:
+    delete:
+      tags: [Message]
+      summary: 删除留言（本人或管理员）
+      description: 需登录；仅本人或管理员可删。
+      operationId: deleteMessage
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1883,3 +2038,74 @@ components:
             comment_count: { type: integer, description: 评论总数 }
             user_count: { type: integer, description: 用户总数 }
             total_views: { type: integer, format: int64, description: 总浏览量 }
+
+    # ===== 公开统计 =====
+    PublicStatsData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          type: object
+          properties:
+            articles: { type: integer, description: 已发布文章数 }
+            comments: { type: integer, description: 有效评论数（不含软删） }
+            views: { type: integer, format: int64, description: 已发布文章总浏览量 }
+
+    # ===== 关于页内容 =====
+    AboutContent:
+      type: object
+      properties:
+        intro: { type: string, description: "站点介绍（Markdown，空行分段），最长 8000" }
+        stack:
+          type: array
+          description: 技术栈标签列表
+          items: { type: string }
+        footnote: { type: string, description: 文末一行小注，最长 800 }
+    AboutContentData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          $ref: "#/components/schemas/AboutContent"
+
+    # ===== 留言板 =====
+    Message:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer, nullable: true }
+        user:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/CommentUser"
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+    MessageWriteRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, maxLength: 400 }
+    MessageData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          $ref: "#/components/schemas/Message"
+    MessageListData:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: "成功" }
+        data:
+          type: object
+          properties:
+            list:
+              type: array
+              items:
+                $ref: "#/components/schemas/Message"
+            total: { type: integer, format: int64 }
+            page: { type: integer }
+            page_size: { type: integer }

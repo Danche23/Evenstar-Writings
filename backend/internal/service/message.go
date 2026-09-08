@@ -5,6 +5,7 @@ import (
 	"github.com/Danche23/Evenstar-Writings/internal/model"
 	"github.com/Danche23/Evenstar-Writings/internal/repository"
 	apperrors "github.com/Danche23/Evenstar-Writings/pkg/errors"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
 )
 
 // MessageService 留言业务逻辑
@@ -20,6 +21,7 @@ func NewMessageService(messageRepo *repository.MessageRepository, userRepo *repo
 
 // List 分页留言（带留言者简略信息）
 func (s *MessageService) List(page, size int) (*dto.MessageListResponse, error) {
+	page, size = utils.ClampPage(page, size, 10, 50)
 	rows, total, err := s.messageRepo.List(page, size)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
