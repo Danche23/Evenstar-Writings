@@ -18,5 +18,6 @@ func RegisterRoutes(group *gin.RouterGroup, h *TagHandler) {
 		admin.POST("/tags", h.AdminCreate)
 		admin.PUT("/tags/:id", h.AdminUpdate)
 		admin.DELETE("/tags/:id", h.AdminDelete)
+		admin.PUT("/tags/reorder", h.AdminReorder)
 	}
 }

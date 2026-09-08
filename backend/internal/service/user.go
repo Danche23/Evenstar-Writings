@@ -4,6 +4,7 @@ import (
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
 	"github.com/Danche23/Evenstar-Writings/internal/repository"
 	apperrors "github.com/Danche23/Evenstar-Writings/pkg/errors"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -75,6 +76,7 @@ func (s *UserService) UpdatePassword(userID uint, req dto.UpdatePasswordRequest)
 
 // List 后台分页查询用户
 func (s *UserService) List(page, size int, keyword string) (*dto.PageData[dto.UserResponse], error) {
+	page, size = utils.ClampPage(page, size, 10, 100)
 	users, total, err := s.userRepo.List(page, size, keyword)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
@@ -114,6 +116,40 @@ func (s *UserService) UpdateStatus(operatorID, targetID uint, status int8) error
 	updates := map[string]interface{}{"status": status}
 	if status == 2 {
 		updates["token_version"] = user.TokenVersion + 1
+	}
+	return s.userRepo.Update(targetID, updates)
+}
+
+// GetAuthor 前台展示的博主信息（公开，不含敏感字段）
+func (s *UserService) GetAuthor() (*dto.AuthorResponse, error) {
+	user, err := s.userRepo.GetAuthor()
+	if err != nil {
+		return nil, apperrors.ErrInternalError
+	}
+	if user == nil {
+		return &dto.AuthorResponse{}, nil
+	}
+	return &dto.AuthorResponse{
+		Nickname: user.Nickname,
+		Avatar:   user.Avatar,
+		Bio:      user.Bio,
+	}, nil
+}
+
+// AdminUpdateUser 后台编辑用户资料（仅 nickname/bio，不能改密码/角色/状态）
+func (s *UserService) AdminUpdateUser(targetID uint, req dto.AdminUpdateUserRequest) error {
+	if _, err := s.userRepo.FindByID(targetID); err != nil {
+		return apperrors.ErrUserNotFound
+	}
+	updates := map[string]interface{}{}
+	if req.Nickname != nil {
+		updates["nickname"] = *req.Nickname
+	}
+	if req.Bio != nil {
+		updates["bio"] = *req.Bio
+	}
+	if len(updates) == 0 {
+		return nil
 	}
 	return s.userRepo.Update(targetID, updates)
 }

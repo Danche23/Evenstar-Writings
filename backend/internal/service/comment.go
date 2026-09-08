@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/Danche23/Evenstar-Writings/pkg/utils"
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
@@ -27,8 +28,14 @@ func NewCommentService(commentRepo *repository.CommentRepository, userRepo *repo
 }
 
 // ListComments 两级评论树（一级分页，二级全量带出）
-func (s *CommentService) ListComments(articleID uint, page, size int) (*dto.PageData[dto.Comment], error) {
+// total = 未删除一级数（分页用）；count = 未删除一级+二级总数（展示用）
+func (s *CommentService) ListComments(articleID uint, page, size int) (*dto.CommentListResponse, error) {
+	page, size = utils.ClampPage(page, size, 10, 50)
 	topLevel, total, err := s.commentRepo.ListTopLevel(articleID, page, size)
+	if err != nil {
+		return nil, apperrors.ErrInternalError
+	}
+	count, err := s.commentRepo.CountVisibleAll(articleID)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
 	}
@@ -41,7 +48,13 @@ func (s *CommentService) ListComments(articleID uint, page, size int) (*dto.Page
 		}
 		list = append(list, c)
 	}
-	return dto.NewPageData(list, total, page, size), nil
+	return &dto.CommentListResponse{
+		List:     list,
+		Total:    total,
+		Count:    count,
+		Page:     page,
+		PageSize: size,
+	}, nil
 }
 
 // CreateComment 发表评论（限流 + 层级归位）
@@ -94,6 +107,7 @@ func (s *CommentService) CreateComment(userID, articleID uint, req dto.CommentWr
 }
 
 // DeleteComment 删除评论（用户删自己的，管理员删任意）
+// 删除一级评论时级联删除其下所有二级回复（软删，前台即不再显示、不再计数）
 func (s *CommentService) DeleteComment(userID, commentID uint, isAdmin bool) error {
 	comment, err := s.commentRepo.FindByID(commentID)
 	if err != nil {
@@ -102,12 +116,17 @@ func (s *CommentService) DeleteComment(userID, commentID uint, isAdmin bool) err
 	if !isAdmin && (comment.UserID == nil || *comment.UserID != userID) {
 		return apperrors.ErrForbidden
 	}
+	// 一级评论：事务内连带删除其下全部二级回复，保证数据一致
+	if comment.ParentID == nil {
+		return s.commentRepo.DeleteWithReplies(comment.ID)
+	}
 	return s.commentRepo.Delete(commentID)
 }
 
 // AdminListComments 后台评论列表
-func (s *CommentService) AdminListComments(page, size int, articleID uint) (*dto.PageData[dto.AdminComment], error) {
-	comments, total, err := s.commentRepo.AdminList(page, size, articleID)
+func (s *CommentService) AdminListComments(page, size int, articleID uint, keyword, userKeyword string) (*dto.PageData[dto.AdminComment], error) {
+	page, size = utils.ClampPage(page, size, 20, 100)
+	comments, total, err := s.commentRepo.AdminList(page, size, articleID, keyword, userKeyword)
 	if err != nil {
 		return nil, apperrors.ErrInternalError
 	}
@@ -138,10 +157,15 @@ func (s *CommentService) AdminListComments(page, size int, articleID uint) (*dto
 	return dto.NewPageData(list, total, page, size), nil
 }
 
-// AdminDeleteComment 后台删除评论（软删）
+// AdminDeleteComment 后台删除评论（软删；一级评论级联删除其二级回复）
 func (s *CommentService) AdminDeleteComment(commentID uint) error {
-	if _, err := s.commentRepo.FindByID(commentID); err != nil {
+	comment, err := s.commentRepo.FindByID(commentID)
+	if err != nil {
 		return apperrors.ErrResourceNotFound
+	}
+	// 一级评论：事务内连带删除其下全部二级回复，保证数据一致
+	if comment.ParentID == nil {
+		return s.commentRepo.DeleteWithReplies(comment.ID)
 	}
 	return s.commentRepo.Delete(commentID)
 }

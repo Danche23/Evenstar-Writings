@@ -1,15 +1,19 @@
 package api
 
 import (
+	"github.com/Danche23/Evenstar-Writings/internal/api/about"
 	"github.com/Danche23/Evenstar-Writings/internal/api/article"
 	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
 	"github.com/Danche23/Evenstar-Writings/internal/api/category"
 	"github.com/Danche23/Evenstar-Writings/internal/api/comment"
+	"github.com/Danche23/Evenstar-Writings/internal/api/message"
 	"github.com/Danche23/Evenstar-Writings/internal/api/stats"
 	"github.com/Danche23/Evenstar-Writings/internal/api/tag"
 	"github.com/Danche23/Evenstar-Writings/internal/api/upload"
 	"github.com/Danche23/Evenstar-Writings/internal/api/user"
 	"github.com/Danche23/Evenstar-Writings/internal/middleware"
+	"github.com/Danche23/Evenstar-Writings/pkg/config"
+	"github.com/Danche23/Evenstar-Writings/pkg/database"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,11 +28,13 @@ type Router struct {
 	commentHandler  *comment.CommentHandler
 	uploadHandler   *upload.UploadHandler
 	statsHandler    *stats.StatsHandler
+	messageHandler  *message.MessageHandler
+	aboutHandler    *about.AboutHandler
 }
 
 // NewRouter 创建路由
-func NewRouter(authHandler *auth.AuthHandler, userHandler *user.UserHandler, articleHandler *article.ArticleHandler, categoryHandler *category.CategoryHandler, tagHandler *tag.TagHandler, commentHandler *comment.CommentHandler, uploadHandler *upload.UploadHandler, statsHandler *stats.StatsHandler) *Router {
-	return &Router{authHandler: authHandler, userHandler: userHandler, articleHandler: articleHandler, categoryHandler: categoryHandler, tagHandler: tagHandler, commentHandler: commentHandler, uploadHandler: uploadHandler, statsHandler: statsHandler}
+func NewRouter(authHandler *auth.AuthHandler, userHandler *user.UserHandler, articleHandler *article.ArticleHandler, categoryHandler *category.CategoryHandler, tagHandler *tag.TagHandler, commentHandler *comment.CommentHandler, uploadHandler *upload.UploadHandler, statsHandler *stats.StatsHandler, messageHandler *message.MessageHandler, aboutHandler *about.AboutHandler) *Router {
+	return &Router{authHandler: authHandler, userHandler: userHandler, articleHandler: articleHandler, categoryHandler: categoryHandler, tagHandler: tagHandler, commentHandler: commentHandler, uploadHandler: uploadHandler, statsHandler: statsHandler, messageHandler: messageHandler, aboutHandler: aboutHandler}
 }
 
 // Setup 设置路由（总入口）
@@ -38,16 +44,40 @@ func (r *Router) Setup(engine *gin.Engine) {
 	engine.Use(middleware.RequestLogger())
 	engine.Use(middleware.CORS())
 
-	// 健康检查
+	// 健康检查（含 MySQL / Redis 连通性探针，便于容器编排做就绪判断）
 	engine.GET("/api/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "ok",
+		dbOK, redisOK := true, true
+
+		if sqlDB, err := database.GetMySQL().DB(); err != nil {
+			dbOK = false
+		} else if err := sqlDB.Ping(); err != nil {
+			dbOK = false
+		}
+
+		if rdb := database.GetRedis(); rdb == nil {
+			redisOK = false
+		} else if err := rdb.Ping(c.Request.Context()).Err(); err != nil {
+			redisOK = false
+		}
+
+		status := "ok"
+		code := 200
+		if !dbOK || !redisOK {
+			status = "degraded"
+			code = 503
+		}
+		c.JSON(code, gin.H{
+			"status":  status,
 			"message": "Evenstar API is running",
+			"mysql":   dbOK,
+			"redis":   redisOK,
 		})
 	})
 
-	// 本地 mock 存储的静态文件访问（开发期，后续换 OSS 后移除）
-	engine.Static("/uploads", "./storage")
+	// 本地 mock 存储的静态文件访问：仅在未启用 OSS 时挂载（生产启用 OSS 后不再暴露本地目录）
+	if cfg := config.Get(); cfg.OSS.Bucket == "" || (cfg.OSS.Endpoint == "" && cfg.OSS.Region == "") || cfg.OSS.AccessKeyID == "" {
+		engine.Static("/uploads", "./storage")
+	}
 
 	// API 路由组
 	apiGroup := engine.Group("/api")
@@ -60,6 +90,8 @@ func (r *Router) Setup(engine *gin.Engine) {
 		comment.RegisterRoutes(apiGroup, r.commentHandler)
 		upload.RegisterRoutes(apiGroup, r.uploadHandler)
 		stats.RegisterRoutes(apiGroup, r.statsHandler)
+		message.RegisterRoutes(apiGroup, r.messageHandler)
+		about.RegisterRoutes(apiGroup, r.aboutHandler)
 	}
 }
 

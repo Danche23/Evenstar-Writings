@@ -53,6 +53,18 @@ func (r *UserRepository) Update(id uint, updates map[string]interface{}) error {
 }
 
 // List 分页查询用户，keyword 按用户名/昵称/邮箱模糊搜索
+// FindByIDs 批量按 ID 查用户（避免逐条查库造成 N+1）
+func (r *UserRepository) FindByIDs(ids []uint) ([]model.User, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var users []model.User
+	if err := r.db.Where("id IN ?", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *UserRepository) List(page, size int, keyword string) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
@@ -75,4 +87,16 @@ func (r *UserRepository) List(page, size int, keyword string) ([]model.User, int
 // Delete 软删用户（GORM 软删除：写入 deleted_at）
 func (r *UserRepository) Delete(id uint) error {
 	return r.db.Delete(&model.User{}, id).Error
+}
+
+// GetAuthor 获取站点博主（role=1 且 status=1 的第一个用户）；无则返回 nil
+func (r *UserRepository) GetAuthor() (*model.User, error) {
+	var user model.User
+	if err := r.db.Where("role = ? AND status = ?", 1, 1).Order("id ASC").Limit(1).Find(&user).Error; err != nil {
+		return nil, err
+	}
+	if user.ID == 0 {
+		return nil, nil
+	}
+	return &user, nil
 }

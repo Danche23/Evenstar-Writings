@@ -8,6 +8,9 @@ import (
 
 // RegisterRoutes 注册用户模块路由（由顶层 api/router.go 统一调用）
 func RegisterRoutes(group *gin.RouterGroup, h *UserHandler) {
+	// 公开：前台获取博主信息（无需登录）
+	group.GET("/user/author", h.GetAuthor)
+
 	// 前台：需登录
 	authed := group.Group("")
 	authed.Use(middleware.Auth())
@@ -22,6 +25,7 @@ func RegisterRoutes(group *gin.RouterGroup, h *UserHandler) {
 	admin.Use(middleware.Auth(), middleware.AdminOnly())
 	{
 		admin.GET("/users", h.AdminListUsers)
+		admin.PUT("/users/:id", h.AdminUpdateUser)
 		admin.DELETE("/users/:id", h.AdminDeleteUser)
 		admin.PUT("/users/:id/status", h.AdminUpdateUserStatus)
 	}
