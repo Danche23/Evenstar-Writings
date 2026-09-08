@@ -1,7 +1,17 @@
 <template>
   <div class="admin-shell">
+    <!-- ✅ 手机端顶栏（仅 <=900px 显示） -->
+    <div class="admin-topbar">
+      <button class="admin-menu-btn" aria-label="菜单" @click="sideOpen = true">☰</button>
+      <span class="admin-topbar-title">管理后台</span>
+    </div>
+
+    <!-- ✅ 手机端遮罩 -->
+    <div v-if="sideOpen" class="admin-overlay" @click="sideOpen = false"></div>
+
     <!-- 侧边导航 -->
-    <aside class="admin-side">
+    <aside class="admin-side" :class="{ open: sideOpen }">
+      <button class="side-close" aria-label="关闭菜单" @click="sideOpen = false">✕</button>
       <router-link to="/" class="side-brand">
         <span class="logo-mark">E</span>Evenstar 管理后台
       </router-link>
@@ -61,13 +71,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
 const store = useUserStore()
+
+// ✅ 手机端侧边栏抽屉开关；路由切换时自动关闭
+const sideOpen = ref(false)
+watch(() => route.path, () => { sideOpen.value = false })
 
 function isActive(path) {
   return route.path === path || route.path.startsWith(path + '/')
@@ -164,14 +178,40 @@ function onLogout() {
 .foot-logout { color: #e07a60; cursor: pointer; }
 .foot-logout:hover { text-decoration: underline; }
 .admin-main { flex: 1; padding: 28px 32px; min-width: 0; background: var(--bg); }
+
+/* ✅ 手机端：侧边栏改为 off-canvas 抽屉（<=900px 生效） */
+.admin-topbar { display: none; }
+.admin-overlay { display: none; }
+.side-close { display: none; }
 @media (max-width: 900px) {
-  .admin-side { width: 64px; padding: 18px 8px; }
-  .side-brand span:not(.logo-mark), .nav-group, .side-nav > a { font-size: 0; }
-  .side-nav > a { justify-content: center; padding: 10px 4px; font-size: 16px; gap: 0; }
-  /* 窄屏为纯图标栏：父级仅展示图标，收起二级菜单 */
-  .nav-toggle { font-size: 0; justify-content: center; padding: 10px 4px; }
-  .nav-toggle .arrow { display: none; }
-  .nav-children { display: none; }
-  .foot-user, .foot-link { font-size: 0; justify-content: center; padding: 8px 4px; }
+  .admin-shell { flex-direction: column; }
+  .admin-topbar {
+    display: flex; align-items: center; gap: 12px;
+    height: 52px; padding: 0 14px; background: #121a2b; color: #fff;
+    position: sticky; top: 0; z-index: 200;
+  }
+  .admin-menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; font-size: 20px; line-height: 1;
+    background: transparent; border: 1px solid #2a3550; color: #fff; cursor: pointer;
+  }
+  .admin-topbar-title { font-weight: 700; font-size: 15px; }
+  .admin-overlay {
+    display: block; position: fixed; inset: 0; z-index: 150;
+    background: rgba(8, 12, 22, 0.5);
+  }
+  .admin-side {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 160;
+    width: 240px; max-width: 80vw; transform: translateX(-100%);
+    transition: transform 0.25s ease; box-shadow: 2px 0 16px rgba(0,0,0,.3);
+  }
+  .admin-side.open { transform: translateX(0); }
+  .side-close {
+    display: block; position: absolute; top: 14px; right: 10px;
+    width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
+    background: #1f2940; color: #cfd8ea; font-size: 15px; line-height: 1;
+  }
+  .side-close:hover { background: #2a3550; color: #fff; }
+  .admin-main { padding: 16px 14px; }
 }
 </style>

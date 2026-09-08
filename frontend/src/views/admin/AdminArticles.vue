@@ -16,8 +16,9 @@
       <button class="btn btn-primary btn-sm" @click="reload">搜索</button>
     </div>
 
+    <p class="table-hint">← 左右滑动表格，查看全部列与操作 →</p>
     <div class="admin-card">
-      <el-table :data="list" v-loading="loading" style="width: 100%">
+      <el-table :data="list" v-loading="loading" style="width: 100%; min-width: 920px">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="title" label="标题" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
@@ -42,7 +43,7 @@
             {{ row.published_at ? formatDate(row.published_at) : '—' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="140">
           <template #default="{ row }">
             <router-link :to="`/admin/articles/${row.id}/edit`" class="op-link">编辑</router-link>
             <el-popconfirm title="确定删除该文章？" width="200" @confirm="remove(row)">

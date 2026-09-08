@@ -11,8 +11,9 @@
       <button class="btn btn-primary btn-sm" @click="reload">搜索</button>
     </div>
 
+    <p class="table-hint">← 左右滑动表格，查看全部列与操作 →</p>
     <div class="admin-card">
-      <el-table :data="list" v-loading="loading" style="width: 100%">
+      <el-table :data="list" v-loading="loading" style="width: 100%; min-width: 900px">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="用户" min-width="150">
           <template #default="{ row }">
@@ -43,7 +44,7 @@
         <el-table-column label="注册时间" width="130">
           <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <template v-if="row.id === store.user?.id">
               <span class="faint small">（自己）</span>

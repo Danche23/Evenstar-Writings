@@ -4,25 +4,30 @@
 
     <div class="admin-page-head">
       <h2>分类排序</h2>
-      <p class="sub">按前台「分类」模块展示位置排列（与前台列表同款式），拖动行调整顺序，松手自动保存并同步前台。</p>
+      <p class="sub">按前台「分类」模块展示位置排列（与前台列表同款式，方形编号卡片），拖动卡片调整顺序，松手自动保存并同步前台。</p>
     </div>
 
     <div class="admin-card sort-card" v-loading="loading">
       <template v-if="list.length">
-        <div class="sort-list">
+        <div class="cat-sort-grid">
           <div
             v-for="(c, i) in list" :key="c.id"
-            class="sort-row" :class="{ dragging: dragIndex === i }"
+            class="cat-tile" :class="{ dragging: dragIndex === i }"
             draggable="true"
             @dragstart="onDragStart(i)"
             @dragover.prevent="onDragOver"
             @drop="onDrop(i)"
             @dragend="dragIndex = null"
           >
-            <span class="badge">{{ c.name.slice(0, 1) }}</span>
-            <span class="name">{{ c.name }}</span>
-            <span class="count">{{ c.article_count }} 篇</span>
-            <span class="grip" title="拖动调整顺序">⠿</span>
+            <span class="tile-idx">{{ String(i + 1).padStart(2, '0') }}</span>
+            <div class="tile-body">
+              <span class="tile-name">{{ c.name }}</span>
+              <span class="tile-count">{{ c.article_count }} 篇</span>
+            </div>
+            <div class="tile-foot">
+              <span class="tile-hint">拖动排序</span>
+              <span class="grip" title="拖动调整顺序">⠿</span>
+            </div>
           </div>
         </div>
         <div class="save-bar">
@@ -85,37 +90,55 @@ onMounted(load)
 
 <style scoped>
 .admin-page-head .sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-.sort-card { padding: 18px 22px; }
+.sort-card { padding: 20px 22px; }
 
-/* 排序列表：复刻前台侧栏「分类」列表式样式 */
-.sort-list { display: flex; flex-direction: column; gap: 6px; }
-.sort-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 9px 12px; background: #fff;
-  border: 1px solid var(--border); border-radius: 10px;
+/* 排序栅格：与前台「分类」页完全一致 —— 桌面 3 列 / 平板 2 列 / 手机 1 列，
+   前台断点：>900px 3列 → ≤900px 2列 → ≤600px 1列（Categories.vue） */
+.cat-sort-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1000px;
+}
+.cat-tile {
+  position: relative; overflow: hidden; min-width: 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 118px; padding: 18px 20px;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
   cursor: grab; user-select: none; color: var(--text);
+  box-shadow: var(--shadow-sm);
   transition: border-color .15s, box-shadow .15s, opacity .15s, transform .1s;
 }
-.sort-row:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
-.sort-row:active { cursor: grabbing; }
-.sort-row.dragging { opacity: .35; transform: scale(.98); }
-.sort-row .badge {
-  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-  background: var(--primary-100); color: var(--primary-700);
-  display: grid; place-items: center; font-size: 13px; font-weight: 600;
+.cat-tile:hover { border-color: var(--primary-200); box-shadow: var(--shadow); }
+.cat-tile:active { cursor: grabbing; }
+.cat-tile.dragging { opacity: .35; transform: scale(.98); }
+.tile-idx {
+  position: absolute; top: 4px; right: 12px;
+  font-family: var(--font-display); font-size: 40px; font-weight: 700;
+  color: var(--primary-100); line-height: 1; pointer-events: none;
 }
-.sort-row:nth-child(even) .badge { background: #f3e6c8; color: #8a6d2f; }
-.sort-row .name {
-  flex: 1; min-width: 0; font-size: 14px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.tile-body { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.tile-name {
+  font-family: var(--font-display); font-size: 19px; font-weight: 700;
+  color: #2c261d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.sort-row .count {
-  font-size: 11.5px; color: var(--text-faint); background: var(--bg);
-  padding: 2px 9px; border-radius: 999px; flex-shrink: 0;
+.tile-count { font-size: 12.5px; color: var(--text-faint); }
+.tile-foot {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
 }
-.sort-row .grip { color: var(--text-faint); font-size: 15px; cursor: grab; flex-shrink: 0; }
+.tile-hint { font-size: 12px; color: var(--text-faint); }
+.cat-tile .grip { color: var(--text-faint); font-size: 16px; cursor: grab; flex-shrink: 0; }
 
-.save-bar { margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 12px; display: flex; justify-content: flex-end; }
+.save-bar { margin-top: 18px; border-top: 1px dashed var(--border); padding-top: 12px; display: flex; justify-content: flex-end; }
 .save-state { font-size: 12.5px; color: var(--text-faint); }
 .save-state.done { color: var(--success); }
+
+@media (max-width: 900px) {
+  .cat-sort-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .sort-card { padding: 14px; }
+  .cat-sort-grid { grid-template-columns: 1fr; }
+}
 </style>
