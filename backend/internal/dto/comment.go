@@ -18,10 +18,20 @@ type Comment struct {
 	Replies   []Comment    `json:"replies"`
 }
 
+// CommentListResponse 文章评论列表响应：
+// total = 未删除一级评论数（用于分页）；count = 未删除一级 + 二级总数（用于展示）
+type CommentListResponse struct {
+	List     []Comment `json:"list"`
+	Total    int64     `json:"total"`
+	Count    int64     `json:"count"`
+	Page     int       `json:"page"`
+	PageSize int       `json:"page_size"`
+}
+
 // CommentWriteRequest 发表评论请求
 type CommentWriteRequest struct {
 	Content   string `json:"content" binding:"required,max=400"`
-	ParentID  *uint  `json:"parent_id"`  // 一级评论 id（回复时恒指一级）
+	ParentID  *uint  `json:"parent_id"`   // 一级评论 id（回复时恒指一级）
 	ReplyToID *uint  `json:"reply_to_id"` // 实际回复对象 id，仅展示「张三 → 李四」
 }
 

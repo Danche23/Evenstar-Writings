@@ -15,13 +15,25 @@ func NewCategoryRepository(db *gorm.DB) *CategoryRepository {
 	return &CategoryRepository{db: db}
 }
 
-// ListAll 全量列表（按 id 升序）
+// ListAll 全量列表（按 sort_order 升序，其次 id 升序）
 func (r *CategoryRepository) ListAll() ([]model.Category, error) {
 	var categories []model.Category
-	if err := r.db.Order("id ASC").Find(&categories).Error; err != nil {
+	if err := r.db.Order("sort_order ASC, id ASC").Find(&categories).Error; err != nil {
 		return nil, err
 	}
 	return categories, nil
+}
+
+// Reorder 按传入的有序 id 数组重排 sort_order（事务内逐个更新）
+func (r *CategoryRepository) Reorder(ids []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for i, id := range ids {
+			if err := tx.Model(&model.Category{}).Where("id = ?", id).Update("sort_order", i+1).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // FindByID 按 ID 查分类
@@ -31,6 +43,18 @@ func (r *CategoryRepository) FindByID(id uint) (*model.Category, error) {
 		return nil, err
 	}
 	return &category, nil
+}
+
+// FindByIDs 批量按 ID 查分类（避免逐条查库造成 N+1）
+func (r *CategoryRepository) FindByIDs(ids []uint) ([]model.Category, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var categories []model.Category
+	if err := r.db.Where("id IN ?", ids).Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
 }
 
 // FindByName 按名称查分类（重名校验）

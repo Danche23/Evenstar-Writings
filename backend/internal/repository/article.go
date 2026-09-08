@@ -157,3 +157,35 @@ func (r *ArticleRepository) SetTags(articleID uint, tagIDs []uint) error {
 		return nil
 	})
 }
+
+// CategoryIDsByArticles 批量取多篇文章的分类 ID（一次查询，避免逐条查库造成 N+1）
+func (r *ArticleRepository) CategoryIDsByArticles(articleIDs []uint) (map[uint][]uint, error) {
+	res := make(map[uint][]uint, len(articleIDs))
+	if len(articleIDs) == 0 {
+		return res, nil
+	}
+	var rows []model.ArticleCategory
+	if err := r.db.Where("article_id IN ?", articleIDs).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		res[row.ArticleID] = append(res[row.ArticleID], row.CategoryID)
+	}
+	return res, nil
+}
+
+// TagIDsByArticles 批量取多篇文章的标签 ID（一次查询，避免逐条查库造成 N+1）
+func (r *ArticleRepository) TagIDsByArticles(articleIDs []uint) (map[uint][]uint, error) {
+	res := make(map[uint][]uint, len(articleIDs))
+	if len(articleIDs) == 0 {
+		return res, nil
+	}
+	var rows []model.ArticleTag
+	if err := r.db.Where("article_id IN ?", articleIDs).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		res[row.ArticleID] = append(res[row.ArticleID], row.TagID)
+	}
+	return res, nil
+}

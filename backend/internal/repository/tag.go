@@ -15,13 +15,25 @@ func NewTagRepository(db *gorm.DB) *TagRepository {
 	return &TagRepository{db: db}
 }
 
-// ListAll 全量列表（按 id 升序）
+// ListAll 全量列表（按 sort_order 升序，其次 id 升序）
 func (r *TagRepository) ListAll() ([]model.Tag, error) {
 	var tags []model.Tag
-	if err := r.db.Order("id ASC").Find(&tags).Error; err != nil {
+	if err := r.db.Order("sort_order ASC, id ASC").Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
+}
+
+// Reorder 按传入的有序 id 数组重排 sort_order（事务内逐个更新）
+func (r *TagRepository) Reorder(ids []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for i, id := range ids {
+			if err := tx.Model(&model.Tag{}).Where("id = ?", id).Update("sort_order", i+1).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // FindByID 按 ID 查标签
@@ -31,6 +43,18 @@ func (r *TagRepository) FindByID(id uint) (*model.Tag, error) {
 		return nil, err
 	}
 	return &tag, nil
+}
+
+// FindByIDs 批量按 ID 查标签（避免逐条查库造成 N+1）
+func (r *TagRepository) FindByIDs(ids []uint) ([]model.Tag, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var tags []model.Tag
+	if err := r.db.Where("id IN ?", ids).Find(&tags).Error; err != nil {
+		return nil, err
+	}
+	return tags, nil
 }
 
 // FindByName 按名称查标签（重名校验）

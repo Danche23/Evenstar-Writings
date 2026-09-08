@@ -78,3 +78,17 @@ func (h *CategoryHandler) AdminDelete(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+// AdminReorder 后台重排分类前台展示顺序（传入有序 id 数组）
+func (h *CategoryHandler) AdminReorder(c *gin.Context) {
+	var req dto.CategoryReorderRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.IDs) == 0 {
+		response.Error(c, apperrors.CodeInvalidParam, "请求参数错误")
+		return
+	}
+	if err := h.categoryService.Reorder(req.IDs); err != nil {
+		response.BizError(c, err)
+		return
+	}
+	response.Success(c, nil)
+}

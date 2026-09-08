@@ -2,6 +2,7 @@ package comment
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/Danche23/Evenstar-Writings/internal/dto"
 	"github.com/Danche23/Evenstar-Writings/internal/middleware"
@@ -82,8 +83,10 @@ func (h *CommentHandler) AdminListComments(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	articleID, _ := strconv.ParseUint(c.Query("article_id"), 10, 32)
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	userKeyword := strings.TrimSpace(c.Query("user"))
 
-	resp, err := h.commentService.AdminListComments(page, size, uint(articleID))
+	resp, err := h.commentService.AdminListComments(page, size, uint(articleID), keyword, userKeyword)
 	if err != nil {
 		response.BizError(c, err)
 		return

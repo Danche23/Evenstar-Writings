@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/Danche23/Evenstar-Writings/internal/api"
+	"github.com/Danche23/Evenstar-Writings/internal/api/about"
 	"github.com/Danche23/Evenstar-Writings/internal/api/article"
 	"github.com/Danche23/Evenstar-Writings/internal/api/auth"
 	"github.com/Danche23/Evenstar-Writings/internal/api/category"
 	"github.com/Danche23/Evenstar-Writings/internal/api/comment"
+	"github.com/Danche23/Evenstar-Writings/internal/api/message"
 	"github.com/Danche23/Evenstar-Writings/internal/api/stats"
 	"github.com/Danche23/Evenstar-Writings/internal/api/tag"
 	"github.com/Danche23/Evenstar-Writings/internal/api/upload"
@@ -57,9 +59,17 @@ func (a *App) Initialize(configPath string) error {
 		return fmt.Errorf("JWT 密钥未配置：请在 config.yaml 或环境变量中设置 jwt.secret")
 	}
 
+	// 1.6 邮件配置校验：关闭 mock 后必须配齐 SMTP，否则注册 / 找回密码在生产不可用（P0 快速失败）
+	if !a.cfg.Mail.Mock && (a.cfg.Mail.Host == "" || a.cfg.Mail.Username == "" || a.cfg.Mail.FromAddr == "") {
+		return fmt.Errorf("邮件未配置完整：mail.mock=false 时必须设置 mail.host / mail.username / mail.from_addr（密码请用环境变量 MAIL_PASSWORD）")
+	}
+
 	// 2. 初始化日志
 	if err := a.initLogger(); err != nil {
 		return err
+	}
+	if a.cfg.Mail.Mock {
+		logger.Warn("mail.mock=true：不会真正发送邮件，验证码仅打印到日志（生产环境请设为 false）")
 	}
 
 	// 3. 初始化数据库
@@ -141,6 +151,8 @@ func (a *App) initDependencies() error {
 	categoryRepo := repository.NewCategoryRepository(a.mysqlDB)
 	tagRepo := repository.NewTagRepository(a.mysqlDB)
 	commentRepo := repository.NewCommentRepository(a.mysqlDB)
+	messageRepo := repository.NewMessageRepository(a.mysqlDB)
+	aboutRepo := repository.NewAboutRepository(a.mysqlDB)
 	uploadRepo := repository.NewUploadRepository(a.mysqlDB)
 
 	// ========== 存储实现（OSS 配置填齐则启用正式存储，否则本地 mock） ==========
@@ -161,6 +173,8 @@ func (a *App) initDependencies() error {
 	commentService := service.NewCommentService(commentRepo, userRepo, articleRepo, a.redis)
 	uploadService := service.NewUploadService(uploadRepo, articleRepo, uploadStorage, a.redis)
 	statsService := service.NewStatsService(a.mysqlDB)
+	messageService := service.NewMessageService(messageRepo, userRepo)
+	aboutService := service.NewAboutService(aboutRepo)
 
 	// ========== 创建 Handler ==========
 	authHandler := auth.NewAuthHandler(authService)
@@ -171,9 +185,11 @@ func (a *App) initDependencies() error {
 	commentHandler := comment.NewCommentHandler(commentService)
 	uploadHandler := upload.NewUploadHandler(uploadService)
 	statsHandler := stats.NewStatsHandler(statsService)
+	messageHandler := message.NewMessageHandler(messageService)
+	aboutHandler := about.NewAboutHandler(aboutService)
 
 	// ========== 创建 Router ==========
-	a.router = api.NewRouter(authHandler, userHandler, articleHandler, categoryHandler, tagHandler, commentHandler, uploadHandler, statsHandler)
+	a.router = api.NewRouter(authHandler, userHandler, articleHandler, categoryHandler, tagHandler, commentHandler, uploadHandler, statsHandler, messageHandler, aboutHandler)
 	return nil
 }
 

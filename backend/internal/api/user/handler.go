@@ -111,3 +111,32 @@ func (h *UserHandler) AdminUpdateUserStatus(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+// GetAuthor 前台获取博主信息（公开接口，无需登录）
+func (h *UserHandler) GetAuthor(c *gin.Context) {
+	resp, err := h.userService.GetAuthor()
+	if err != nil {
+		response.BizError(c, err)
+		return
+	}
+	response.Success(c, resp)
+}
+
+// AdminUpdateUser 后台编辑用户资料（nickname/bio）
+func (h *UserHandler) AdminUpdateUser(c *gin.Context) {
+	targetID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, apperrors.CodeInvalidParam, "参数错误")
+		return
+	}
+	var req dto.AdminUpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperrors.CodeInvalidParam, "请求参数错误")
+		return
+	}
+	if err := h.userService.AdminUpdateUser(uint(targetID), req); err != nil {
+		response.BizError(c, err)
+		return
+	}
+	response.Success(c, nil)
+}
