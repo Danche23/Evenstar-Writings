@@ -13,8 +13,9 @@
       <button class="btn btn-primary btn-sm" @click="reload">搜索</button>
     </div>
 
+    <p class="table-hint">← 左右滑动表格，查看全部列与操作 →</p>
     <div class="admin-card">
-      <el-table :data="list" v-loading="loading" style="width: 100%">
+      <el-table :data="list" v-loading="loading" style="width: 100%; min-width: 1080px">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="article_title" label="所属文章" min-width="160" show-overflow-tooltip />
         <el-table-column label="昵称" width="120">
@@ -38,7 +39,7 @@
         <el-table-column label="时间" width="120">
           <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="180">
           <template #default="{ row }">
             <div class="op-cell">
               <div class="op-main">

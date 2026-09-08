@@ -54,6 +54,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+/* 移动端基础保障：任何子元素比视口宽都会引发整页横向溢出（"显示一半/错位"的常见根因）。
+   用 clip 而非 hidden —— clip 不创建滚动容器，不会破坏 position: sticky 头部。 */
+html, body { width: 100%; max-width: 100%; overflow-x: clip; }
+#app, .site, .site-main { width: 100%; max-width: 100%; overflow-x: clip; }
+#app > * { min-width: 0; max-width: 100%; }
 
 body {
   font-family: var(--font);
@@ -220,7 +225,26 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
 .empty .big { font-size: 40px; margin-bottom: 10px; }
 .loading-box { padding: 64px 20px; text-align: center; color: var(--text-muted); }
 
-.admin-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+/* 后台卡片：内容(表格/表单)过宽时在卡片内横向滚动，绝不撑破整页 */
+.admin-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow-x: auto; box-shadow: var(--shadow-sm);
+}
+.admin-card > * { max-width: 100%; }
+/* 表格横向滚动条可见 + 触摸惯性滚动 */
+.admin-card { -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #b9c0cf transparent; }
+.admin-card::-webkit-scrollbar { height: 10px; }
+.admin-card::-webkit-scrollbar-track { background: transparent; }
+.admin-card::-webkit-scrollbar-thumb { background: #b9c0cf; border-radius: 5px; }
+.admin-card::-webkit-scrollbar-thumb:hover { background: #98a1b3; }
+/* 窄屏表格滑动提示（仅手机显示） */
+.table-hint { display: none; }
+@media (max-width: 640px) {
+  .table-hint {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin: 0 0 8px; font-size: 12px; color: var(--text-faint);
+  }
+}
 .admin-page-head { margin-bottom: 20px; }
 .admin-page-head h2 { font-size: 20px; font-weight: 700; }
 .pager-wrap { display: flex; justify-content: flex-end; padding: 16px 18px 18px; }
@@ -238,4 +262,42 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
   .rise, .rise-1, .rise-2, .rise-3, .rise-4 { animation: none; }
   html { scroll-behavior: auto; }
   * { transition-duration: .01ms !important; }
+}
+
+/* ============ 移动端通用基线（≤640px） ============ */
+@media (max-width: 640px) {
+  .page-container,
+  .page-container-narrow { padding-left: 16px; padding-right: 16px; }
+  body { font-size: 14.5px; }
+  .page-title-bar h1 { font-size: 24px; }
+  /* 卡片内边距在窄屏略收，避免内容被压成"一半" */
+  .card-pad { padding: 16px; }
+  .markdown-panel { padding: 16px 16px; }
+  /* 超长英文/代码不撑破布局 */
+  .md-body, .md-body pre, .md-body code { word-break: break-word; }
+}
+
+/* ============ 后台通用：任何子页面不把页面撑出横向滚动 ============
+   注意：这些规则必须放在全局(非 scoped)样式里——后台子页面的根元素
+   由 <router-view> 渲染，父布局里的 scoped 后代选择器对它无效。 */
+.admin-main,
+.admin-main > *,
+.admin-card,
+.admin-page-head { min-width: 0; max-width: 100%; }
+
+/* Element Plus 弹层/对话框宽度超过小屏视口时的兜底 */
+.el-dialog,
+.el-message-box { max-width: calc(100vw - 28px); }
+
+@media (max-width: 640px) {
+  /* 标题行(标题+按钮)允许换行 */
+  .admin-page-head.flex-between { flex-wrap: wrap; row-gap: 10px; }
+  /* 筛选栏：不换行 + 固定宽输入框 = 手机横向溢出主因 */
+  .toolbar-row { flex-wrap: wrap !important; }
+  .toolbar-row > .el-select,
+  .toolbar-row > .el-input,
+  .toolbar-row > .el-input-number,
+  .toolbar-row > .el-date-editor { width: 100% !important; }
+  .toolbar-row .btn { flex: 1 1 auto; }
+  .pager-wrap { justify-content: center; padding: 14px 8px 16px; }
 }

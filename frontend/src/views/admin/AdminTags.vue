@@ -8,8 +8,9 @@
       </div>
     </div>
 
+    <p class="table-hint">← 左右滑动表格，查看全部列与操作 →</p>
     <div class="admin-card">
-      <el-table :data="list" v-loading="loading" style="width: 100%">
+      <el-table :data="list" v-loading="loading" style="width: 100%; min-width: 720px">
         <el-table-column type="index" label="排名" width="80" :index="rankIndex" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="名称" min-width="160" />

@@ -33,8 +33,9 @@
     <div class="section-title">最近文章
       <router-link to="/admin/articles" class="more">管理全部 →</router-link>
     </div>
+    <p class="table-hint">← 左右滑动表格，查看全部列与操作 →</p>
     <div class="admin-card">
-      <el-table :data="recent" v-loading="loading" style="width: 100%">
+      <el-table :data="recent" v-loading="loading" style="width: 100%; min-width: 700px">
         <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">

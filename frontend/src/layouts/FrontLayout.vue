@@ -3,6 +3,9 @@
     <!-- 顶部导航：纸感毛玻璃 + 衬线 logo -->
     <header class="site-header">
       <div class="header-inner">
+        <!-- ✅ 手机端汉堡按钮（桌面隐藏，<700px 显示） -->
+        <button class="hamburger" aria-label="菜单" @click="drawerOpen = true">☰</button>
+
         <router-link to="/" class="logo">
           <span class="logo-mark">暮</span>
           <span class="logo-text">暮星随笔<em>Evenstar Writings</em></span>
@@ -43,6 +46,38 @@
         </div>
       </div>
     </header>
+
+    <!-- ✅ 手机端抽屉菜单 -->
+    <el-drawer
+      v-model="drawerOpen"
+      title="暮星随笔"
+      direction="ltr"
+      size="72%"
+    >
+      <div class="drawer-nav">
+        <router-link to="/" :class="{ active: isActive('/') }" @click="drawerOpen = false">首页</router-link>
+        <router-link to="/articles" :class="{ active: isArticleRoute }" @click="drawerOpen = false">文章</router-link>
+        <router-link to="/categories" :class="{ active: isActive('/categories') }" @click="drawerOpen = false">分类</router-link>
+        <router-link to="/tags" :class="{ active: isActive('/tags') }" @click="drawerOpen = false">标签</router-link>
+        <router-link to="/archive" :class="{ active: isActive('/archive') }" @click="drawerOpen = false">归档</router-link>
+        <router-link to="/guestbook" :class="{ active: isActive('/guestbook') }" @click="drawerOpen = false">留言板</router-link>
+        <router-link to="/about" :class="{ active: isActive('/about') }" @click="drawerOpen = false">关于</router-link>
+      </div>
+
+      <el-divider />
+
+      <div class="drawer-actions">
+        <template v-if="!store.isLoggedIn">
+          <router-link to="/login" class="btn btn-outline btn-sm" @click="drawerOpen = false">登录</router-link>
+          <router-link to="/register" class="btn btn-primary btn-sm" @click="drawerOpen = false">注册</router-link>
+        </template>
+        <template v-else>
+          <router-link to="/profile" class="drawer-link" @click="drawerOpen = false">个人中心</router-link>
+          <router-link v-if="store.isAdmin" to="/admin" class="drawer-link" @click="drawerOpen = false">管理后台</router-link>
+          <button class="drawer-link logout" @click="logout">退出登录</button>
+        </template>
+      </div>
+    </el-drawer>
 
     <!-- 页面主体 -->
     <main class="site-main">
@@ -95,6 +130,9 @@ const greeting = greetNow()
 const quote = dailyQuote()
 const stats = ref(null)
 
+// ✅ 手机端抽屉开关
+const drawerOpen = ref(false)
+
 onMounted(async () => {
   try {
     stats.value = await getPublicStats()
@@ -105,6 +143,13 @@ const isArticleRoute = computed(
   () => route.path.startsWith('/articles') && route.path !== '/articles'
 )
 const isActive = (p) => (p === '/' ? route.path === '/' : route.path.startsWith(p))
+
+// ✅ 抽屉内的退出登录
+function logout() {
+  store.logout()
+  drawerOpen.value = false
+  router.push('/')
+}
 
 function onCommand(cmd) {
   if (cmd === 'profile') router.push('/profile')
@@ -166,6 +211,31 @@ function onCommand(cmd) {
   background: var(--primary-100); color: var(--primary-700);
   font-weight: 700; font-size: 13px;
 }
+/* ✅ 手机端汉堡按钮（桌面隐藏） */
+.hamburger {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 9px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; font-size: 20px; line-height: 1;
+}
+.hamburger:hover { background: var(--primary-100); }
+/* ✅ 抽屉内部菜单 */
+.drawer-nav { display: flex; flex-direction: column; gap: 4px; }
+.drawer-nav a {
+  padding: 12px 10px; border-radius: 10px; font-size: 15px;
+  color: var(--text); text-decoration: none;
+}
+.drawer-nav a:hover { background: var(--primary-100); }
+.drawer-nav a.active { color: var(--primary); font-weight: 600; background: var(--primary-100); }
+.drawer-actions { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.drawer-actions .btn { text-align: center; }
+.drawer-link {
+  padding: 12px 10px; border-radius: 10px; font-size: 15px; text-align: left;
+  background: transparent; border: none; color: var(--text); cursor: pointer; text-decoration: none;
+}
+.drawer-link:hover { background: var(--primary-100); }
+.drawer-link.logout { color: #b4453a; }
 .site-main { flex: 1; }
 
 /* 页脚：暖墨深绿 */
@@ -197,6 +267,9 @@ function onCommand(cmd) {
 @media (max-width: 700px) {
   .main-nav { display: none; }
   .header-inner { gap: 12px; }
+  .hamburger { display: flex; }
+  .logo-text em { display: none; }
+  .header-actions .btn { display: none; }
   .footer-inner { flex-direction: column; gap: 18px; }
 }
 </style>

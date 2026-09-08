@@ -12,8 +12,9 @@
       </el-select>
     </div>
 
+    <p class="table-hint">← 左右滑动表格，查看全部列与操作 →</p>
     <div class="admin-card">
-      <el-table :data="list" v-loading="loading" style="width: 100%">
+      <el-table :data="list" v-loading="loading" style="width: 100%; min-width: 920px">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="预览" width="90">
           <template #default="{ row }">
@@ -35,7 +36,7 @@
         <el-table-column label="时间" width="130">
           <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <span class="op-link" @click="copyLink(row)">复制链接</span>
             <el-popconfirm title="确定删除该文件？" width="200" @confirm="remove(row)">

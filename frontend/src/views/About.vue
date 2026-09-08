@@ -123,7 +123,8 @@ onMounted(async () => {
 
 @media (max-width: 640px) {
   .block { padding: 22px 20px; }
-  .author-block { padding: 20px; flex-wrap: wrap; }
+  .author-block { padding: 20px; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .a-meta, .a-social { width: 100%; }
   .a-social { margin-left: 0; }
 }
 </style>

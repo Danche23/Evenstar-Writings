@@ -281,7 +281,9 @@ onMounted(async () => {
 .stat .lbl { font-size: 12.5px; color: var(--text-muted); }
 .stats .divider { width: 1px; height: 22px; background: var(--border); }
 
-.home-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 26px; align-items: start; }
+.home-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 26px; align-items: start; min-width: 0; }
+.main-col { min-width: 0; max-width: 100%; }
+.side { min-width: 0; max-width: 100%; }
 .section-title {
   display: flex; align-items: baseline; justify-content: space-between;
   margin: 4px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
