@@ -66,6 +66,9 @@ func (s *ArticleService) GetArticle(id uint) (*dto.ArticleDetail, error) {
 // HotArticles 热门文章（Redis ZSET 取 TOP N，过滤未发布/已删除）
 func (s *ArticleService) HotArticles(limit int) ([]dto.ArticleListItem, error) {
 	ctx := context.Background()
+	if s.redis == nil {
+		return []dto.ArticleListItem{}, nil
+	}
 	ids, err := s.redis.ZRevRange(ctx, "hot:articles", 0, int64(limit-1)).Result()
 	if err != nil {
 		return nil, apperrors.ErrInternalError
@@ -113,6 +116,9 @@ func (s *ArticleService) RecordView(articleID uint, userID uint, ip, userAgent s
 	article, err := s.articleRepo.FindByID(articleID)
 	if err != nil || article.Status != 2 {
 		return 0, apperrors.ErrResourceNotFound
+	}
+	if s.redis == nil {
+		return article.Views, nil
 	}
 
 	// 防刷标识：登录用户按 user_id，游客按 IP + md5(UA)
@@ -422,6 +428,9 @@ func (s *ArticleService) relationsOf(articles []model.Article) (map[uint][]dto.C
 
 // currentViews 计算当前浏览量 = MySQL views + Redis 未回写增量
 func (s *ArticleService) currentViews(ctx context.Context, articleID, baseViews uint) uint {
+	if s.redis == nil {
+		return baseViews
+	}
 	incr, err := s.redis.Get(ctx, fmt.Sprintf("article:view:%d", articleID)).Uint64()
 	if err != nil {
 		return baseViews
@@ -438,6 +447,9 @@ func md5Hash(s string) string {
 // SyncViews 回写 Redis 浏览量增量到 MySQL（cron 每 5 分钟调用，GETDEL 原子取数）
 func (s *ArticleService) SyncViews() error {
 	ctx := context.Background()
+	if s.redis == nil {
+		return nil
+	}
 	// 用 SCAN 游标遍历，避免 KEYS 在大数据量下阻塞 Redis
 	var cursor uint64
 	for {

@@ -125,6 +125,9 @@ func (s *UploadService) AdminDelete(id uint, force bool) ([]dto.RefArticle, erro
 
 // checkAvatarLimit avatar 每用户每月 5 次限制
 func (s *UploadService) checkAvatarLimit(ctx context.Context, userID uint) error {
+	if s.redis == nil {
+		return nil
+	}
 	key := fmt.Sprintf("upload:avatar:%d:%s", userID, time.Now().Format("2006-01"))
 	count, err := s.redis.Incr(ctx, key).Result()
 	if err != nil {

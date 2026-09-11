@@ -77,7 +77,9 @@ func (s *AuthService) Login(req dto.LoginRequest) (*dto.LoginResponse, error) {
 	}
 
 	// 4. 登录成功，清零失败计数
-	_ = s.redis.Del(ctx, failKey)
+	if s.redis != nil {
+		_ = s.redis.Del(ctx, failKey)
+	}
 
 	// 5. 生成 jwt
 	token, err := jwt.GenerateToken(user.ID, user.Username, user.TokenVersion)
@@ -94,6 +96,9 @@ func (s *AuthService) Login(req dto.LoginRequest) (*dto.LoginResponse, error) {
 // SendCode 发送邮箱验证码（register：邮箱未注册；reset：邮箱已注册）
 func (s *AuthService) SendCode(req dto.SendCodeRequest) error {
 	ctx := context.Background()
+	if s.redis == nil {
+		return apperrors.ErrInternalError
+	}
 
 	// 1. 滑块校验（每次必验）
 	if err := s.verifyCaptcha(req.CaptchaVerifyParam); err != nil {
@@ -218,7 +223,9 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.LoginResponse, err
 	}
 
 	// 8. 删除已用验证码
-	_ = s.redis.Del(ctx, codeKey)
+	if s.redis != nil {
+		_ = s.redis.Del(ctx, codeKey)
+	}
 
 	// 9. 生成 token 自动登录
 	token, err := jwt.GenerateToken(user.ID, user.Username, user.TokenVersion)
@@ -276,7 +283,9 @@ func (s *AuthService) ResetPassword(req dto.ResetPasswordRequest) error {
 	}
 
 	// 7. 删除已用验证码
-	_ = s.redis.Del(ctx, codeKey)
+	if s.redis != nil {
+		_ = s.redis.Del(ctx, codeKey)
+	}
 
 	return nil
 }
@@ -292,6 +301,9 @@ func (s *AuthService) verifyCaptcha(param string) error {
 // loginFailed 记录一次登录失败并返回对应错误：
 // 失败未达阈值返回 1003，达到阈值（本次起）返回 1007 通知前端弹滑块
 func (s *AuthService) loginFailed(ctx context.Context, key string) error {
+	if s.redis == nil {
+		return apperrors.ErrInvalidCredentials
+	}
 	count, err := s.redis.Incr(ctx, key).Result()
 	if err != nil {
 		return apperrors.ErrInternalError
@@ -307,6 +319,9 @@ func (s *AuthService) loginFailed(ctx context.Context, key string) error {
 
 // loginFailLocked 连续失败是否已达阈值（需滑块）
 func (s *AuthService) loginFailLocked(ctx context.Context, key string) bool {
+	if s.redis == nil {
+		return false
+	}
 	n, err := s.redis.Get(ctx, key).Int()
 	return err == nil && n >= loginFailThreshold
 }
@@ -316,6 +331,9 @@ func (s *AuthService) loginFailLocked(ctx context.Context, key string) bool {
 // 复用与 SendCode 相同的 Incr + 首次设置过期模式；Redis 异常时放行，
 // 避免限流组件故障拖垮登录（与 RateLimit 中间件行为一致）。
 func (s *AuthService) checkLoginEmailLimit(ctx context.Context, email string) error {
+	if s.redis == nil {
+		return nil
+	}
 	key := fmt.Sprintf("login:limit:email:%s", strings.ToLower(email))
 	count, err := s.redis.Incr(ctx, key).Result()
 	if err != nil {
@@ -332,6 +350,9 @@ func (s *AuthService) checkLoginEmailLimit(ctx context.Context, email string) er
 
 // verifyCode 校验邮箱验证码（从 Redis 取，比对，不匹配返回业务错误）
 func (s *AuthService) verifyCode(ctx context.Context, key, code string) error {
+	if s.redis == nil {
+		return apperrors.ErrInternalError
+	}
 	got, err := s.redis.Get(ctx, key).Result()
 	if err == redis.Nil {
 		return apperrors.ErrVerifyCodeError
