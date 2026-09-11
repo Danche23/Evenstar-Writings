@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	apperrors "github.com/Danche23/Evenstar-Writings/pkg/errors"
 	"github.com/Danche23/Evenstar-Writings/pkg/database"
+	apperrors "github.com/Danche23/Evenstar-Writings/pkg/errors"
 	"github.com/Danche23/Evenstar-Writings/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +14,10 @@ import (
 // RateLimit IP 限流中间件：同一 IP 在 window 内最多 limit 次（按路由 + IP 计数）
 func RateLimit(limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if database.GetRedis() == nil {
+			c.Next()
+			return
+		}
 		ip := c.ClientIP()
 		key := "rate-limit:" + c.FullPath() + ":" + ip
 		ctx := context.Background()

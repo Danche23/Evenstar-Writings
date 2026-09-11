@@ -62,15 +62,17 @@ func (s *CommentService) CreateComment(userID, articleID uint, req dto.CommentWr
 	// 1. 限流：同用户 1 分钟 5 条
 	ctx := context.Background()
 	limitKey := fmt.Sprintf("comment:limit:%d", userID)
-	count, err := s.redis.Incr(ctx, limitKey).Result()
-	if err != nil {
-		return nil, apperrors.ErrInternalError
-	}
-	if count == 1 {
-		_ = s.redis.Expire(ctx, limitKey, time.Minute)
-	}
-	if count > 5 {
-		return nil, apperrors.New(apperrors.CodeTooManyRequests, "评论太频繁，请稍后再试")
+	if s.redis != nil {
+		count, err := s.redis.Incr(ctx, limitKey).Result()
+		if err != nil {
+			return nil, apperrors.ErrInternalError
+		}
+		if count == 1 {
+			_ = s.redis.Expire(ctx, limitKey, time.Minute)
+		}
+		if count > 5 {
+			return nil, apperrors.New(apperrors.CodeTooManyRequests, "评论太频繁，请稍后再试")
+		}
 	}
 
 	// 2. 校验文章存在
@@ -85,8 +87,20 @@ func (s *CommentService) CreateComment(userID, articleID uint, req dto.CommentWr
 		if err != nil {
 			return nil, apperrors.ErrResourceNotFound
 		}
+		if err := validateReplyArticle(parent, articleID); err != nil {
+			return nil, err
+		}
 		if parent.ParentID != nil {
 			parentID = parent.ParentID
+		}
+	}
+	if req.ReplyToID != nil {
+		replyTo, err := s.commentRepo.FindByID(*req.ReplyToID)
+		if err != nil {
+			return nil, apperrors.ErrResourceNotFound
+		}
+		if err := validateReplyArticle(replyTo, articleID); err != nil {
+			return nil, err
 		}
 	}
 
@@ -104,6 +118,13 @@ func (s *CommentService) CreateComment(userID, articleID uint, req dto.CommentWr
 
 	result := s.toComment(comment)
 	return &result, nil
+}
+
+func validateReplyArticle(comment *model.Comment, articleID uint) error {
+	if comment == nil || comment.ArticleID != articleID {
+		return apperrors.ErrResourceNotFound
+	}
+	return nil
 }
 
 // DeleteComment 删除评论（用户删自己的，管理员删任意）
