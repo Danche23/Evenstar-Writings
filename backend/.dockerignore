@@ -1,0 +1,19 @@
+# ===== backend/.dockerignore =====
+# 构建上下文排除项：这些文件不会进入 docker build，避免密钥泄露 / 镜像臃肿
+
+# 真实配置含 SMTP/OSS/DB 密钥 —— 绝不能进镜像（运行时用 -v 挂载）
+configs/
+*.yaml
+
+# 日志与本地杂项
+*.log
+.env
+
+# git 元数据
+.git/
+.gitignore
+.gitattributes
+
+# Docker 自身
+Dockerfile
+.dockerignore
