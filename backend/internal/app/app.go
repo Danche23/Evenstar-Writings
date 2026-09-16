@@ -78,7 +78,9 @@ func (a *App) Initialize(configPath string) error {
 	}
 
 	// 4. 初始化依赖
-	a.initDependencies()
+	if err := a.initDependencies(); err != nil {
+		return fmt.Errorf("依赖初始化失败: %w", err)
+	}
 
 	// 4.5 启动定时任务（浏览量回写）
 	a.startCron()
