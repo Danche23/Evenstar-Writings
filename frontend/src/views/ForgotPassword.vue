@@ -65,7 +65,7 @@ async function handleSendCode() {
   try {
     const param = await captchaRef.value.verify()
     await sendCode(form.email.trim(), 'reset', param)
-    ElMessage.success('验证码已发送，请查收邮箱（mock 模式下查看后端日志）')
+    ElMessage.success('验证码已发送，请查收邮箱')
     startCountdown()
   } catch (e) {
     if (e?.message !== '已取消滑块验证') {

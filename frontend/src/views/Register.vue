@@ -76,7 +76,7 @@ async function handleSendCode() {
   try {
     const param = await captchaRef.value.verify()
     await sendCode(form.email.trim(), 'register', param)
-    ElMessage.success('验证码已发送，请查收邮箱（mock 模式下查看后端日志）')
+    ElMessage.success('验证码已发送，请查收邮箱')
     startCountdown()
   } catch (e) {
     // 拦截器已统一提示后端错误；仅忽略用户主动取消滑块
