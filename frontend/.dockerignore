@@ -1,0 +1,31 @@
+# ===== frontend/.dockerignore =====
+# 构建上下文排除项：这些不会进 docker build，避免镜像臃肿 / 干扰 COPY . .
+#
+# ⚠️ 千万不要写 "排除 .env*" —— 那会把 .env.production 也排掉，
+#    导致生产构建缺 VITE_CAPTCHA_*，线上滑块验证直接不可用。
+
+# 依赖与产物（容器内会重新安装 / 重新构建）
+node_modules/
+dist/
+.vite/
+
+# git 元数据
+.git/
+.gitignore
+.gitattributes
+
+# 与部署无关的本地脚本与原型
+prototype/
+ovf_scan.mjs
+repro_article.mjs
+vite.config.js.timestamp-*.mjs
+
+# 开发期环境文件（.env.production 必须保留，不要在这里写）
+.env.local
+.env.development.local
+.env.*.local
+
+# 日志与 IDE
+*.log
+.vscode/
+.idea/
