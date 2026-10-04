@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
+	"math/big"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +21,31 @@ import (
 
 	"github.com/redis/go-redis/v9"
 )
+
+// seedPassword 取环境变量里的密码；未设置时生成随机密码并提示一次。
+// 仓库里不保存任何真实密码：本地想用固定密码，导出对应环境变量即可。
+func seedPassword(envKey, who string) string {
+	if pw := os.Getenv(envKey); pw != "" {
+		return pw
+	}
+	pw := randomPassword(12)
+	fmt.Printf("[seed] 未设置 %s，已为%s生成随机密码（仅本次显示）: %s\n", envKey, who, pw)
+	return pw
+}
+
+// randomPassword 生成 n 位随机密码（大小写字母 + 数字）
+func randomPassword(n int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	out := make([]byte, n)
+	for i := range out {
+		v, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			log.Fatalf("生成随机密码失败: %v", err)
+		}
+		out[i] = charset[v.Int64()]
+	}
+	return string(out)
+}
 
 // md 将多行拼接为正文
 func md(parts ...string) string { return strings.Join(parts, "\n") }
@@ -58,7 +86,7 @@ func main() {
 		b, _ := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
 		return string(b)
 	}
-	adminPw := hash("***REMOVED***") // 管理员初始密码，请在后台修改
+	adminPw := hash(seedPassword("SEED_ADMIN_PASSWORD", "管理员")) // 管理员初始密码，请在后台修改
 	admin := model.User{
 		Username: "evenstar", Nickname: "暮星", Email: "evenstar@evenstar.local",
 		Password: adminPw, Role: 1, Status: 1,
@@ -81,7 +109,7 @@ func main() {
 		{"anran", "安然", "anran@evenstar.local", "刚入行的新人，觉得写笔记是快乐的复利。"},
 	}
 	userIDs := []uint{admin.ID}
-	upw := hash("***REMOVED***") // 普通用户统一测试密码
+	upw := hash(seedPassword("SEED_USER_PASSWORD", "普通用户")) // 普通用户统一测试密码
 	for _, u := range users {
 		row := model.User{Username: u.username, Nickname: u.nickname, Email: u.email,
 			Password: upw, Role: 2, Status: 1, Bio: u.bio}
@@ -336,6 +364,7 @@ func main() {
 	fmt.Println("redis hot list refreshed")
 
 	fmt.Println("=== SEED DONE ===")
-	fmt.Println("管理员: evenstar@evenstar.local / ***REMOVED*** （昵称 暮星）")
-	fmt.Println("普通用户统一密码: ***REMOVED***")
+	fmt.Println("管理员: evenstar@evenstar.local （昵称 暮星）")
+	fmt.Println("普通用户: 11 个 @evenstar.local 测试账号（统一密码）")
+	fmt.Println("密码来源: 环境变量 SEED_ADMIN_PASSWORD / SEED_USER_PASSWORD；未设置时见上方随机密码")
 }
