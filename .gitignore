@@ -38,3 +38,7 @@ frontend/.env.*.local
 # Vite 构建缓存与运行时生成的临时配置文件
 frontend/.vite/
 frontend/vite.config.js.timestamp-*.mjs
+
+# ===== 本地调试脚本（含本地管理员账号凭据，且写死了本机绝对路径，禁止提交）=====
+frontend/ovf_scan.mjs
+frontend/repro_article.mjs
