@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 报告安全漏洞
+    url: https://github.com/Danche23/Evenstar-Writings/security/advisories/new
+    about: 请通过私密渠道报告安全问题，不要开公开 Issue
+  - name: 📖 部署与配置文档
+    url: https://github.com/Danche23/Evenstar-Writings#配置说明
+    about: 部署、环境变量与常见配置问题，请先查阅 README
+  - name: 💬 使用问题与讨论
+    url: https://github.com/Danche23/Evenstar-Writings/discussions
+    about: 一般性使用疑问、想法交流

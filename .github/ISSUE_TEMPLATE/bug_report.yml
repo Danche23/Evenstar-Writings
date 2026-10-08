@@ -1,0 +1,92 @@
+name: Bug 报告
+description: 报告一个功能异常或错误
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量填写完整，便于快速定位问题。
+        ⚠️ 安全问题请勿在这里提交，见 [SECURITY.md](../SECURITY.md)。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 实际发生了什么？期望的结果是什么？
+      placeholder: 例如：在文章详情页点击"发表评论"后提示 500，但评论已写入数据库。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 按顺序列出触发问题的操作
+      placeholder: |
+        1. 打开 /articles/1
+        2. 输入评论内容
+        3. 点击"发表评论"
+        4. 看到 500 错误
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响范围
+      options:
+        - 后端 API
+        - 前端页面（前台）
+        - 前端页面（后台）
+        - 数据库 / 缓存
+        - 部署 / Docker
+        - 文档
+        - 不确定
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: 运行方式
+      options:
+        - 本地开发（go run + npm run dev）
+        - Docker Compose 部署
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 操作系统、Go / Node / MySQL / Redis 版本、浏览器版本等
+      placeholder: |
+        OS: Windows 11 / Ubuntu 22.04
+        Go: 1.24
+        Node: 20
+        MySQL: 8.0
+        Redis: 7
+        浏览器: Chrome 130
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 报错信息
+      description: 后端日志或浏览器控制台输出。**请先移除其中的密码、密钥、token 等敏感信息。**
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认事项
+      options:
+        - label: 我已搜索过现有 Issue，确认这不是重复问题
+          required: true
+        - label: 我已从日志中移除所有敏感信息（密钥 / 密码 / token）
+          required: true

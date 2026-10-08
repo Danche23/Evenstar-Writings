@@ -42,3 +42,6 @@ frontend/vite.config.js.timestamp-*.mjs
 # ===== 本地调试脚本（含本地管理员账号凭据，且写死了本机绝对路径，禁止提交）=====
 frontend/ovf_scan.mjs
 frontend/repro_article.mjs
+
+# ===== 本地联调页面（验证码/接口手测用，含个人邮箱与本地账号，禁止提交）=====
+/captcha-test/
