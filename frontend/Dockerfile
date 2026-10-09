@@ -24,11 +24,16 @@ RUN npm run build
 # ===== 阶段2：nginx 托管 =====
 FROM nginx:1.27-alpine
 
-# 容器内站点配置（listen 8080 + 反代 backend:8080）
-# 覆盖官方默认的 default.conf
-COPY nginx.docker.conf /etc/nginx/conf.d/default.conf
+# 站点配置以「模板」形式放入镜像：容器启动时官方 entrypoint 会执行 envsubst，
+# 把 ${SERVER_NAME} 替换成环境变量的值，生成 /etc/nginx/conf.d/default.conf
+COPY nginx.docker.conf.template /etc/nginx/templates/default.conf.template
+
+# 兜底默认域名，仅为单独 docker run 本镜像时能通过 nginx 语法检查；
+# 实际部署由 docker-compose.yml 通过 environment 覆盖为真实域名
+ENV SERVER_NAME=localhost
 
 # 上一阶段的构建产物
 COPY --from=build /app/dist /usr/share/nginx/html
 
-EXPOSE 8080
+# 80/443 为 HTTPS 对外入口，8080 是过渡期明文入口
+EXPOSE 80 443 8080

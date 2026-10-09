@@ -1,14 +1,24 @@
-# ===== frontend/nginx.docker.conf =====
-# 容器内 nginx 站点配置（挂载到容器 /etc/nginx/conf.d/default.conf）
+# ===== frontend/nginx.docker.conf.template =====
+# 容器内 nginx 站点配置模板。
 #
-# 2026-09-18 更新：备案通过后接入 HTTPS
-#   - 80  → 强制跳转到 https://evenstar.love
-#   - 443 → 主站（SSL）
-#   - 8080→ 过渡期保留的明文入口（用 IP:8080 仍可访问），确认无需后可删除
+# 这是一个「模板」而不是最终配置：容器启动时由 nginx 官方镜像的 entrypoint
+# 执行 envsubst，把 ${SERVER_NAME} 替换为环境变量 SERVER_NAME 的值，
+# 输出到 /etc/nginx/conf.d/default.conf 后 nginx 才加载。
+#
+#   SERVER_NAME  —— 站点域名，如 blog.example.com。在 .env 里设置（见根目录 .env.example）。
+#                   证书文件名必须与之对应：/etc/nginx/ssl/<SERVER_NAME>.pem / .key
+#
+# 注意：只有 ${SERVER_NAME} 会被替换。nginx 自身的 $request_uri / $host / $uri 等
+#      变量是单层 $ 且不是环境变量，envsubst 不会碰它们。
+#
+# 三段站点：
+#   - 80   → 强制跳转到 https://<SERVER_NAME>
+#   - 443  → HTTPS 主站（SSL）
+#   - 8080 → 过渡期保留的明文入口（用 IP:8080 仍可访问），确认无需后可删除
 #
 # 证书挂载：宿主机 ./ssl  →  容器 /etc/nginx/ssl（compose 里配置，只读）
-#   即 /var/www/evenstar/ssl/evenstar.love.pem  →  /etc/nginx/ssl/evenstar.love.pem
-#      /var/www/evenstar/ssl/evenstar.love.key  →  /etc/nginx/ssl/evenstar.love.key
+#   即 ./ssl/<SERVER_NAME>.pem  →  /etc/nginx/ssl/<SERVER_NAME>.pem
+#      ./ssl/<SERVER_NAME>.key  →  /etc/nginx/ssl/<SERVER_NAME>.key
 #
 # 与宿主机版 frontend/nginx.conf 的关键差异：
 #   root 指向镜像内 dist（/usr/share/nginx/html）；/api 反代到 compose 服务名 backend:8080
@@ -19,7 +29,7 @@ server {
     server_name _;
 
     # 不做内容，只做跳转。目标写死域名，避免用 IP 访问时跳到证书不匹配的地址
-    return 301 https://evenstar.love$request_uri;
+    return 301 https://${SERVER_NAME}$request_uri;
 }
 
 # ============ ② 443 端口：HTTPS 主站 ============
@@ -27,11 +37,11 @@ server {
     listen 443 ssl;
     # http2 on 是 nginx 1.25.1+ 的写法（本镜像为 nginx:1.27-alpine，支持）
     http2 on;
-    server_name evenstar.love;
+    server_name ${SERVER_NAME};
 
     # ---- 证书（阿里云下载的 Nginx 格式：.pem 证书链 + .key 私钥）----
-    ssl_certificate     /etc/nginx/ssl/evenstar.love.pem;
-    ssl_certificate_key /etc/nginx/ssl/evenstar.love.key;
+    ssl_certificate     /etc/nginx/ssl/${SERVER_NAME}.pem;
+    ssl_certificate_key /etc/nginx/ssl/${SERVER_NAME}.key;
 
     # ---- TLS 基本加固 ----
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -83,7 +93,7 @@ server {
 }
 
 # ============ ③ 8080 端口：过渡期明文入口（内容与改造前完全一致）============
-# 确认 https://evenstar.love 稳定后，可整段删除，并在 compose 里去掉了 8080 映射
+# 确认 https://${SERVER_NAME} 稳定后，可整段删除，并在 compose 里去掉了 8080 映射
 server {
     listen 8080;
     server_name _;

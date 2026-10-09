@@ -14,8 +14,7 @@ dist/
 .gitignore
 .gitattributes
 
-# 与部署无关的本地脚本与原型
-prototype/
+# 与部署无关的本地脚本
 ovf_scan.mjs
 repro_article.mjs
 vite.config.js.timestamp-*.mjs

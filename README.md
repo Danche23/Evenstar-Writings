@@ -107,7 +107,7 @@
 │   │   └── views/              # 页面（含 admin/ 后台页面）
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   └── nginx.docker.conf
+│   └── nginx.docker.conf.template   # 容器内站点配置模板（envsubst 注入域名）
 ├── docs/
 │   ├── openapi.yaml            # OpenAPI 3.0 接口文档
 │   ├── 编码前准备.md            # 设计手记：页面结构 / 测试方案 / 工程收尾
@@ -190,9 +190,12 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o server ./cmd/
 
 # 2) 服务器上准备密钥文件（.env 已被 .gitignore 忽略，务必不要提交）
 cp .env.example .env && chmod 600 .env
-#    编辑 .env，填入真实的数据库密码、JWT_SECRET、邮件 / OSS / 验证码凭据
+#    编辑 .env，填入 SERVER_NAME（你的域名）、数据库密码、JWT_SECRET、邮件 / OSS / 验证码凭据
 
-# 3) 构建镜像并启动
+# 3) 放置 SSL 证书，文件名必须与 SERVER_NAME 一致
+#    ./ssl/your-domain.com.pem  +  ./ssl/your-domain.com.key
+
+# 4) 构建镜像并启动
 docker compose build
 docker compose up -d mysql redis                     # 先起数据库
 docker compose up -d backend web                     # 再起应用
@@ -200,6 +203,10 @@ docker compose up -d backend web                     # 再起应用
 docker compose ps                                    # 查看状态
 docker compose logs -f backend                       # 查看后端日志
 ```
+
+站点域名不写死在配置文件里：`frontend/nginx.docker.conf.template` 中的 `${SERVER_NAME}`
+由容器启动时的 `envsubst` 替换成 `.env` 里 `SERVER_NAME` 的值。
+`SERVER_NAME` 是**必填项**，未设置时 `docker compose` 会直接报错退出，而不会静默套用错误域名。
 
 `backend/configs/config.yaml` 同样含密钥且不入镜像，运行时以只读方式挂载进容器。
 
@@ -221,6 +228,7 @@ docker compose logs -f backend                       # 查看后端日志
 
 | 变量 | 说明 |
 |---|---|
+| `SERVER_NAME` | **部署必填**。站点域名，注入 nginx 的 `server_name` 与 HTTPS 跳转目标；证书须命名为 `./ssl/<SERVER_NAME>.pem` / `.key` |
 | `MYSQL_HOST` / `MYSQL_PASSWORD` / `MYSQL_DATABASE` | MySQL 连接（容器内 host 用 compose 服务名 `mysql`） |
 | `REDIS_HOST` / `REDIS_PASSWORD` | Redis 连接（容器内 host 用 `redis`） |
 | `JWT_SECRET` | JWT 签名密钥，**必须改为足够长的随机串** |
