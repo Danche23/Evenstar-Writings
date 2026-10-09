@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/alibabacloud-go/captcha-20230305 v1.1.3
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.13
-	github.com/alibabacloud-go/tea v1.3.13
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.2.4
+	github.com/alibabacloud-go/tea v1.5.2
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.8+incompatible
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -22,7 +22,7 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5 // indirect
 	github.com/alibabacloud-go/debug v1.0.1 // indirect
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.7 // indirect
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.9 // indirect
 	github.com/aliyun/credentials-go v1.4.5 // indirect
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
@@ -41,6 +41,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
