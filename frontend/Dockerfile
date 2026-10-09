@@ -22,7 +22,7 @@ COPY . .
 RUN npm run build
 
 # ===== 阶段2：nginx 托管 =====
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 
 # 站点配置以「模板」形式放入镜像：容器启动时官方 entrypoint 会执行 envsubst，
 # 把 ${SERVER_NAME} 替换成环境变量的值，生成 /etc/nginx/conf.d/default.conf
