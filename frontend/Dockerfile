@@ -6,7 +6,7 @@
 # 构建和运行环境都封在镜像里，本机没 Docker 也不影响。
 
 # ===== 阶段1：构建静态产物 =====
-FROM node:20-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 
 # 先只拷依赖清单，利用层缓存：只改业务代码时不会重装依赖
