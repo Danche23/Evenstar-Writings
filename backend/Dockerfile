@@ -21,7 +21,7 @@
 #
 # 想恢复「服务器内编译」：换回 git 历史里的多阶段 Dockerfile 即可（需 ≥4G 内存才顺畅）。
 
-FROM alpine:3.20
+FROM alpine:3.24
 
 # ca-certificates：SMTP/OSS 等 HTTPS 调用需要根证书
 # tzdata：时区设为上海，保证日志时间正确
